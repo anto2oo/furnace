@@ -1,0 +1,21 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Interact with user quotas on the system"
+    _HELP["username"]="Specify the username"
+}
+
+_params() {
+    _PARAM["username"]="u"
+
+}
+
+_method() {
+if [ "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
+	raise fatal "User ${_ARG[username]} not in /etc/passwd"
+fi
+
+du -sh /home/"${_ARG[username]}" | awk '{print $1}'
+}

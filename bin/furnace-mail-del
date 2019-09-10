@@ -1,0 +1,58 @@
+#!/bin/bash
+
+function help() {
+
+    printf "Usage : ${0} OPTIONS\nDescription :\n Remove a virtual user from the Postfix database. The mail user must have been configured with f-mail-usr-add.\nOptions :\n"
+
+    printf -- " -a(=ADDRESS) --address(=ADDRESS) | Specify the mail address to delete in the format user@domain.org\n [--no-confirm] | Skip the confirmation request\n -h --help | Show this help message" | column -t -s'|'
+}
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Remove a virtual user from the Postfix database. The mail user must have been configured with furnace"
+    _HELP["address"]="Specify the mail address to create in the format user@domain.org"
+    _HELP["no-confirm"]=" Skip the confirmation request"
+}
+
+_params() {
+    _PARAM["address"]="a"
+    _PARAM_FLAG["no-confirm"]=""
+
+}
+
+_method() {
+
+if [ ! "${_FLAG["no-confirm"]}" = 1 ]; then
+    read -p "Are you sure you want to delete ${_ARG[address]} ? [Y] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 0
+    fi
+fi
+
+if [[ ! "$(grep -m 1 "${_ARG[address]} " /etc/postfix/furnace/mail_aliases)" ]]; then
+    raise fatal "Could not create ${_ARG[address]}; not found in /etc/postfix/furnace/mail_aliases."
+fi
+
+if [[ ! "$(grep -m 1 "${_ARG[address]} " /etc/postfix/furnace/mail_mailbox)" ]]; then
+   raise fatal "Could not create ${_ARG[address]}; not found in /etc/postfix/furnace/mail_aliases."
+fi
+
+if [[ ! "$(grep -m 1 "${_ARG[address]}:" /etc/dovecot/passwd)" ]]; then
+   raise fatal "Could not create ${_ARG[address]} not found in /etc/dovecot/passwd."
+fi
+
+sed -i "/${_ARG[address]} /d" /etc/postfix/furnace/mail_aliases
+
+sed -i "/${_ARG[address]} /d" /etc/postfix/furnace/mail_mailbox
+
+sed -i "/${_ARG[address]}:/d" /etc/dovecot/passwd
+
+postmap /etc/postfix/furnace/mail_aliases
+postmap /etc/postfix/furnace/mail_mailbox
+
+raise notice "Removed ${_ARG[address]}"
+
+}

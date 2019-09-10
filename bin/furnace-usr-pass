@@ -1,0 +1,26 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Change a user's password"
+    _HELP["username"]="Specify the username of the user to modify"
+    _HELP["password"]="Specify the user new password"
+}
+
+_params() {
+    _PARAM["username"]="u"
+    _PARAM["password"]="p"
+}
+
+_method() {
+if [ "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
+	raise fatal "User ${_ARG[username]} not in /etc/passwd"
+fi
+
+if echo "${_ARG[username]}:${_ARG[password]}" | chpasswd; then
+    raise notice "Changed password of user ${_ARG[username]}"
+else
+    raise warning "Could not change password of user ${_ARG[username]}"
+fi
+}

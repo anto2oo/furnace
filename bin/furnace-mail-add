@@ -1,0 +1,55 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Add a virtual user to the Postfix database. The mail domain must have been configured with furnace"
+    _HELP["address"]="Specify the mail address to create in the format user@domain.org"
+    _HELP["password"]="Specify the mail address password"
+}
+
+_params() {
+    _PARAM["address"]="a"
+    _PARAM["password"]="p"
+
+}
+
+_method() {
+
+if [[ "$(grep -m 1 "${_ARG[address]} " /etc/postfix/furnace/mail_aliases)" ]]; then
+    raise fatal "Could not create ${_ARG[address]}; already in /etc/postfix/furnace/mail_aliases."
+fi
+
+if [[ "$(grep -m 1 "${_ARG[address]} " /etc/postfix/furnace/mail_mailbox)" ]]; then
+    raise fatal "Could not create ${_ARG[address]}; already in /etc/postfix/furnace/mail_aliases."
+fi
+
+if [[ "$(grep -m 1 "${_ARG[address]}:" /etc/dovecot/passwd)" ]]; then
+   raise fatal "Could not create ${_ARG[address]}; already in /etc/dovecot/passwd."
+fi
+
+username=$(cut -d@ -f1 <<< "${_ARG[address]}")
+domain=$(cut -d@ -f2 <<< "${_ARG[address]}")
+pwd_hash=$(doveadm pw -p "${_ARG[password]}" -s sha1 | cut -d '}' -f2)
+
+if [[ ! "$(grep -m 1 "${domain} " /etc/postfix/furnace/mail_domains)" ]]; then
+    raise fatal "Could not create ${_ARG[address]}; ${domain} not in /etc/postfix/furnace/mail_domains."
+fi
+
+ctime=$(date +"%Y-%m-%d %H:%m:%S")
+
+echo "## alias ${_ARG[address]}; Added $ctime ##
+${_ARG[address]} ${_ARG[address]}
+"  >> /etc/postfix/furnace/mail_aliases
+
+echo "## mail ${_ARG[address]}; Added $ctime ##
+${_ARG[address]} ${domain}/${username}/
+"  >> /etc/postfix/furnace/mail_mailbox
+
+echo "${_ARG[address]}:${pwd_hash}"  >> /etc/dovecot/passwd
+
+postmap /etc/postfix/furnace/mail_aliases
+postmap /etc/postfix/furnace/mail_mailbox
+
+raise notice "Configured ${_ARG[address]}"
+}

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="List all users created by furnace."
+    _HELP["json"]="Set output format to JSON"
+}
+
+_params() {
+    _PARAM_FLAG["json"]=""
+}
+
+_method() {
+if [ "${_FLAG[json]}" = 1 ]; then
+    
+    echo $( printf '[ '
+    for i in $(grep 'furnace' /etc/group | cut -d: -f 4 | tr ',' '\n'); do
+    printf ", \"$i\"" 
+    done
+    printf ' ]' ) | sed '0,/, /s///'
+
+else
+
+    for i in $(grep 'furnace' /etc/group | cut -d: -f 4 | tr ',' '\n'); do
+    echo "$i"
+    done
+
+fi
+
+}

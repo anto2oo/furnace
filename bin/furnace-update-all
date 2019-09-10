@@ -1,0 +1,17 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE=""
+    _DESCRIPTION="Update packages from the furnace repo, and furnace itself"
+}
+
+_params() {
+	:
+}
+
+_method() {
+
+/usr/local/bin/furnace update pkgs
+
+}

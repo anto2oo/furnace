@@ -1,0 +1,33 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Drop a database."
+    _HELP["database"]="Specify the name of the database (with its prefix)."
+}
+
+_params() {
+    _PARAM["database"]="d"
+    _PARAM_FLAG["no-confirm"]=""
+
+}
+
+_method() {
+
+if [ ! "${_FLAG["no-confirm"]}" = 1 ]; then
+	read -p "Are you sure you want to delete ${_ARG[database]} ? [Y] " -n 1 -r
+	echo
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+	    echo "Aborted."
+	 	exit 0
+	fi
+fi
+
+if ! mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "DROP DATABASE ${_ARG[database]};"; then
+	raise fatal "Couldn't drop SQL database ${_ARG[database]}. It may be non-existant."
+fi
+
+raise notice "Dropped ${_ARG[database]} database"
+
+}

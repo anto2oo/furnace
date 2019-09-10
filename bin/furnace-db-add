@@ -1,0 +1,24 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Add a database and give all rights on it to a given user."
+    _HELP["username"]="Specify the SQL username of the database owner"
+    _HELP["database"]="Specify what will be the name of the new database. The user name will be used as prefix"
+}
+
+_params() {
+    _PARAM["username"]="u"
+    _PARAM["database"]="d"
+
+}
+
+_method() {
+if ! mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "CREATE DATABASE ${_ARG[username]}_${_ARG[database]};GRANT ALL PRIVILEGES ON ${_ARG[username]}_${_ARG[database]}.* to '${_ARG[username]}'@'%';"; then
+	raise fatal "Couldn't create SQL database ${_ARG[database]}. User ${_ARG[username]} may be non-existant."
+else
+    raise notice "Created ${_ARG[database]} database and rights given to ${_ARG[username]}"
+fi
+
+}

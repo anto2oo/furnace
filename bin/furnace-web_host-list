@@ -1,0 +1,32 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="List all hosts created by furnace belonging to a user"
+    _HELP["json"]="Set output format to JSON"
+    _HELP["username"]="Specify the username"
+}
+
+_params() {
+    _PARAM_FLAG["json"]=""
+    _PARAM["username"]="u"
+}
+
+_method() {
+
+if [ "${_FLAG["json"]}" = 1 ]; then
+    echo $( printf '[ '
+        for file in /home/"${_ARG["username"]}"/web/*; do 
+            printf ", \""
+            printf "${file##*/}"
+            printf "\""
+        done | sed '0,/, /s///' 
+    printf ' ]' ) 
+else
+    for file in /home/"${_ARG["username"]}"/web/*; do
+        echo "${file##*/}"
+    done
+fi
+
+}

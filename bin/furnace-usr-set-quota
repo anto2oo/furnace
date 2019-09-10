@@ -1,0 +1,28 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Interact with user quotas on the system"
+    _HELP["username"]="Specify the username"
+    _HELP["quota"]="Specify the user quota"
+}
+
+_params() {
+    _PARAM["username"]="u"
+    _PARAM["quota"]="q"
+
+}
+
+_method() {
+if [ "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
+	raise fatal "User ${_ARG[username]} not in /etc/passwd"
+fi
+
+if quotatool -u "${_ARG[username]}" -bl "${_ARG[quota]}" /; then
+    raise notice "Quota for ${_ARG[username]} set to ${_ARG[quota]}"
+else
+    raise warning "Failed to set quota for ${_ARG[username]}"
+fi
+
+}

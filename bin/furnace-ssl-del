@@ -1,0 +1,28 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Update httpd configuration for a website for it not to use any SSL certificate. This doesn't delete nor revoke the certificate."
+    _HELP["username"]="Specify the username of the website owner"
+    _HELP["domain"]="Specify the domain to affect"
+}
+
+_params() {
+    _PARAM["username"]="u"
+    _PARAM["domain"]="d"
+
+}
+
+_method() {
+
+if [ ! -f /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf ]; then
+    raise fatal "The domain ${_ARG[domain]} is not configured with user ${_ARG[username]}"
+fi
+
+username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+
+systemctl reload httpd
+
+raise notice "Disabled SSL certificate for ${_ARG[domain]}"
+}

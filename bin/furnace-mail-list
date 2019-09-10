@@ -1,0 +1,28 @@
+#!/bin/bash
+
+_help() {
+
+	_USAGE="OPTIONS"
+	_DESCRIPTION="List all virtual mail users created by furnace for a domain."
+	_HELP["json"]="Set output format to JSON"
+	_HELP["domain"]="Specify the domain"
+}
+
+_params() {
+	_PARAM_FLAG["json"]=""
+	_PARAM["domain"]="d"
+}
+
+_method() {
+
+if [ "${_FLAG["json"]}" = 1 ]; then
+
+	echo $( printf '[ '
+		cat /etc/postfix/furnace/mail_aliases | grep "@${_ARG["domain"]} " | sed -e '/^\s*#.*$/d' -e '/^\s*$/d' | awk '{printf ", \"" $1 "\""}' | sed '0,/, /s///'
+		printf ' ]' )
+
+else
+	cat /etc/postfix/furnace/mail_aliases | grep "@${_ARG["domain"]} " | awk '{print $1}'
+fi
+
+}

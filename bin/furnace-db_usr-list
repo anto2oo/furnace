@@ -1,0 +1,31 @@
+#!/bin/bash
+
+_help() {
+
+	_USAGE="OPTIONS"
+	_DESCRIPTION="List all SQL users on the system"
+	_HELP["json"]="Set output format to JSON"
+}
+
+_params() {
+	_PARAM_FLAG["json"]=""
+}
+
+_method() {
+
+if [ "${_FLAG["json"]}" = 1 ]; then
+
+echo $( printf '[ '
+	for i in $(mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "SELECT USER from mysql.user;" | sort | uniq); do
+   printf ", \"$i\""
+done 
+printf ' ]') | sed '0,/, /s///'
+
+else
+
+for i in $(mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "SELECT USER from mysql.user;" | sort | uniq); do
+	echo "$i"
+done
+
+fi
+}

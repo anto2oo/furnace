@@ -1,0 +1,29 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE=""
+    _DESCRIPTION="Update packages from the furnace repo"
+}
+
+_params() {
+	:
+}
+
+_method() {
+yum check-update > /dev/null
+RETVAL=$?
+if [[ $RETVAL == 100 ]]; then
+	raise notice "Updating packages"
+	if ! yum -y -q -e 0 update; then
+		raise fatal "Yum failed to update packages."
+	else
+   		raise notice "Updated packages"
+	fi
+elif [[ $RETVAL == 0 ]]; then
+	raise notice "No update available"
+else
+	raise fatal "Yum failed to update packages."
+fi
+
+}

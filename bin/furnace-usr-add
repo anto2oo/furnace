@@ -1,0 +1,55 @@
+#!/bin/bash
+
+_help() {
+
+	_USAGE="OPTIONS"
+	_DESCRIPTION="Create a new UNIX user"
+	_HELP["username"]="Specify the username of the new user"
+	_HELP["password"]="Specify the user password"
+}
+
+_params() {
+	_PARAM["username"]="u"
+	_PARAM["password"]="p"
+}
+
+_method() {
+
+if [ ! "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
+	raise fatal "User already in /etc/passwd"
+fi
+
+if ! useradd -m -k /dev/null -d /home/"${_ARG[username]}" "${_ARG[username]}"; then
+	raise fatal "Could not add user"
+fi
+
+chown root:"${_ARG[username]}" /home/"${_ARG[username]}"
+
+chmod 750 /home/"${_ARG[username]}"
+
+echo "${_ARG[username]}:${_ARG[password]}" | chpasswd
+
+usermod -aG "${_ARG[username]}" apache
+
+usermod -aG furnace "${_ARG[username]}"
+
+mkdir /home/"${_ARG[username]}"/{web,dns,logs}
+
+chmod -R 750 /home/"${_ARG[username]}"/*
+
+chown -R "${_ARG[username]}":"${_ARG[username]}" /home/"${_ARG[username]}"/*
+
+username="${_ARG[username]}" envsubst '$username' < /usr/share/furnace/templates/initd.conf > "/etc/init.d/php-fpm-${_ARG[username]}"
+
+username="${_ARG[username]}" envsubst '$username' < /usr/share/furnace/templates/fpm-pool.conf > "/etc/php-fpm.d/${_ARG[username]}.conf"
+
+raise notice "User ${_ARG[username]} has been created"
+
+chmod +x /etc/init.d/php-fpm-${_ARG[username]}
+systemctl daemon-reload
+/sbin/chkconfig php-fpm-${_ARG[username]} on
+systemctl restart php-fpm-${_ARG[username]}
+
+raise notice "Restarted services (php-fpm-${_ARG[username]})"
+
+}

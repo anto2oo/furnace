@@ -1,0 +1,25 @@
+#!/bin/bash
+
+_help() {
+
+	_USAGE="OPTIONS"
+	_DESCRIPTION="Create a new SQL user"
+	_HELP["username"]="Specify the username of the new user"
+	_HELP["password"]="Specify the user password"
+}
+
+_params() {
+	_PARAM["username"]="u"
+	_PARAM["password"]="p"
+
+}
+
+_method() {
+
+if ! mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "FLUSH PRIVILEGES;CREATE USER '${_ARG[username]}'@'%' identified by '${_ARG[password]}';GRANT SELECT,UPDATE,INSERT,DELETE ON phpmyadmin.* TO '${_ARG[username]}'@'%';"; then
+	raise fatal "Couldn't create SQL user ${_ARG[username]}. It could exist already."
+else
+	raise notice "Created SQL user ${_ARG[username]}"
+fi
+
+}

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Remove a UNIX user. This will not delete its home nor its content however nginx and php configurations associated with it will."
+    _HELP["username"]="Specify the username of the user"
+    _HELP["no-confirm"]="Skip the confirmation request"
+}
+
+_params() {
+    _PARAM["username"]="u"
+    _PARAM_FLAG["no-confirm"]=""
+}
+
+_method() {
+
+if [ "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
+	raise fatal "User ${_ARG[username]} not in /etc/passwd"
+fi
+
+if [ ! "${_FLAG["no-confirm"]}" = 1 ]; then
+	read -p "Are you sure you want to delete ${_ARG[username]} ? [Y] " -n 1 -r
+	echo
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+	    echo "Aborted."
+	    exit 0
+	fi
+fi
+
+systemctl stop php-fpm-"${_ARG[username]}"
+
+rm -f /etc/init.d/php-fpm-"${_ARG[username]}"
+
+userdel "${_ARG[username]}"
+raise notice "User ${_ARG[username]} deleted"
+
+# other members
+groupdel "${_ARG[username]}"
+
+rm -f /etc/php-fpm.d/"${_ARG[username]}".conf
+
+rm -f /etc/nginx/conf.d/"${_ARG[username]}"_*.conf
+
+systemctl reload nginx
+
+raise notice "Reloaded services (nginx)"
+
+}

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="List all databases owned by a user"
+    _HELP["json"]="Set output format to JSON"
+    _HELP["username"]="Specify the username"
+}
+
+_params() {
+    _PARAM_FLAG["json"]=""
+    _PARAM["username"]="u"
+}
+
+_method() {
+
+if [ "${_FLAG["json"]}" = 1 ]; then
+    echo $( printf '[ '
+    for i in $(mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "SHOW DATABASES LIKE '${_ARG["username"]}_%';" | sort | uniq); do
+        printf ", \"$i\""
+    done 
+    printf ' ]') | sed '0,/, /s///'
+else
+    for i in $(mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "SHOW DATABASES LIKE '${_ARG["username"]}_%';" | sort | uniq); do
+        echo "$i"
+    done 
+fi
+
+}

@@ -1,0 +1,50 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Configure a mail virtual domain with Postfix and generate and configure related openDKIM keys."
+    _HELP["domain"]="Specify the mail domain to configure"
+}
+
+_params() {
+    _PARAM["domain"]="d"
+
+}
+
+_method() {
+
+if [[ ! "$(grep -m 1 "${_ARG[domain]} " /etc/postfix/furnace/mail_domains)" ]]; then
+    raise fatal "${_ARG[domain]} not in /etc/postfix/furnace/mail_domains."
+fi
+
+raise notice "Starting checking if ${_ARG[domain]} is correctly configured..."
+
+if [[ -z $(dig +short A $(hostname)) ]]; then
+    raise warning "There is no A record associated with this server hostname, $(hostname)"
+    IS_PROBLEM=1
+fi
+
+for mxentry in $(dig +short MX "${_ARG[domain]}" | awk '{print $2}'); do
+    if [[ $SERVER_ADDR == $(dig +short A $mxentry) ]]; then
+        MX_OKAY=1
+    fi
+done
+
+if [[ ! $MX_OKAY == 1 ]]; then
+    raise warning "It appears that there is no MX record in ${_ARG[domain]} pointing to this server ($SERVER_ADDR)"
+    IS_PROBLEM=1
+fi
+
+if [[ $SERVER_ADDR == *$(dig +short -x $SERVER_ADDR)* ]]; then
+    raise warning "It appears that there is no reverse DNS (PTR) record for your server IP, $SERVER_ADDR"
+    IS_PROBLEM=1
+fi
+
+if [[ ! $IS_PROBLEM == 1 ]]; then
+    raise notice "Didn't find any problem with ${_ARG[domain]}"
+else
+    raise notice "Finished testing ${_ARG[domain]}"
+fi
+
+}

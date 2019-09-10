@@ -1,0 +1,23 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE=""
+    _DESCRIPTION="Renews all Let's Encrypt certificates using the cerbot renew command."
+}
+
+_params() {
+	:
+}
+
+_method() {
+
+raise notice "Attempting renewal of certificates"
+
+if ! /usr/share/furnace/ssl/getssl -q -w /usr/share/furnace/ssl -a ; then
+    raise fatal "Failed to renew SSL certificates (getssl error)"
+fi
+
+raise notice "Renew command has finished."
+
+}

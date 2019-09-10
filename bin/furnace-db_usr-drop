@@ -1,0 +1,33 @@
+#!/bin/bash
+
+_help() {
+
+	_USAGE="OPTIONS"
+	_DESCRIPTION="Remove a SQL user. This will not delete its associated databases."
+	_HELP["username"]="Specify the username of the user"
+	_HELP["no-confirm"]="Skip the confirmation request"
+}
+
+_params() {
+	_PARAM["username"]="u"
+	_PARAM_FLAG["no-confirm"]=""
+
+}
+
+_method() {
+if [ ! "${_FLAG["no-confirm"]}" = 1 ]; then
+	read -p "Are you sure you want to delete ${_ARG[username]} ? [Y] " -n 1 -r
+	echo
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+	    echo "Aborted."
+	 	exit 0
+	fi
+fi
+
+if ! mysql --defaults-file="${MYSQL_DEFAULTS}" -Bse "REVOKE ALL PRIVILEGES ON *.* FROM '${_ARG[username]}'@'%';DROP USER '${_ARG[username]}';"; then
+	raise fatal "Couldn't drop SQL user ${_ARG[username]}. It may be non-existant."
+else
+	raise notice "Dropped SQL user ${_ARG[username]}"
+fi
+
+}

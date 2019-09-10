@@ -1,0 +1,41 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE="OPTIONS"
+    _DESCRIPTION="Generate a new certificate if it doesn't exist already, and/else only update the httpd configuration to use the SSL certificate."
+    _HELP["username"]="Specify the username of the website owner"
+    _HELP["domain"]="Specify the domain to generate the certificate for"
+    _HELP["force-https"]="Redirect all requests made to the website to HTTPS"
+}
+
+_params() {
+    _PARAM["username"]="u"
+    _PARAM["domain"]="d"
+    _PARAM_FLAG["force-https"]=""
+
+}
+
+_method() {
+
+if [ ! -f /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf ]; then
+    raise fatal "The domain ${_ARG[domain]} is not configured with user ${_ARG[username]}"
+fi
+
+mkdir -p /usr/share/furnace/ssl/${_ARG[domain]}
+
+username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/getssl-domain.conf > /usr/share/furnace/ssl/${_ARG[domain]}/getssl.cfg
+
+if /usr/share/furnace/ssl/getssl -q -w /usr/share/furnace/ssl "${_ARG[domain]}"; then
+    if [[ "${_FLAG["force-https"]}" = 1 ]]; then
+	   username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd-force-https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+    else
+        username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd-https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+    fi
+
+	systemctl reload httpd
+    raise notice "Generated SSL certificate for ${_ARG[domain]}"
+else
+    raise fatal "Failed to register certificate for ${_ARG[domain]}"
+fi
+}
