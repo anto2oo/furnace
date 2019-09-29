@@ -53,13 +53,13 @@ source "${INSTALL_DIR}"/core/logging
 if [ "${UPGRADE_SERVICES}" == "yes" ]; then
   raise notice "Installing remi repository"
 
-  yum install -qy \
+  yum install -q -y \
     wget \
     epel-release \
     yum-utils
 
   # Enable PHP from remi repository
-  yum install -qy http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+  yum install -q -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm
   yum-config-manager --enable remi-php74
 
 fi
@@ -67,7 +67,7 @@ fi
 raise notice "Installing packages from yum"
 
 if ! (
-  yum install -qy \
+  yum install -q -y \
     httpd \
     mod_ssl \
     bind-utils \
