@@ -1,0 +1,91 @@
+#!/bin/bash
+
+source /etc/furnace.conf || echo "Failed to load /etc/furnace.conf" && exit 1
+
+# Include the all core functions
+source "${INSTALL_DIR}"/core/*
+
+echo "[$(date --rfc-3339=seconds)] Trace from '$0 $1 $2'" >>"$LOG_FILE"
+
+_MODULE="$1"
+_ACTION="$2"
+shift 2
+
+if [[ $_MODULE == "-h" || $_MODULE == "--help" ]]; then
+  help_modules
+  exit 0
+fi
+
+declare -A _PARAM
+declare -A _PARAM_FLAG
+declare -A _ARG
+declare -A _FLAG
+declare -A _HELP
+
+if [ -n "$(find /usr/local/bin/ -maxdepth 1 -name "furnace-${_MODULE}*" -print -quit)" ]; then
+
+  if [[ $_ACTION == "-h" || $_ACTION == "--help" ]]; then
+    help_actions "$_MODULE"
+    exit 0
+  fi
+
+  raise debug "Sourcing ${INSTALL_DIR}-${_MODULE}-${_ACTION}"
+
+  if [[ -f /usr/local/bin/furnace-"$_MODULE"-"$_ACTION" ]]; then
+    source "${INSTALL_DIR}/bin/${_MODULE}-${_ACTION}"
+
+    if [[ "$(type -t _params)" != "function" ]]; then
+      raise fatal "The action file is missing a proper argument declaration"
+    elif [[ "$(type -t _help)" != "function" ]]; then
+      raise fatal "The action file is missing a proper help section"
+    else
+      _params
+      for ARG in "${@}"; do
+        ASSIGNED=0
+
+        if [[ ${ARG} == "--help" ]] || [[ ${ARG} == "-h" ]]; then
+          help
+          exit 0
+        fi
+
+        if [[ ${ARG} == "--options" ]] || [[ ${ARG} == "-o" ]]; then
+          options
+          exit 0
+        fi
+
+        for PARAM in "${!_PARAM[@]}"; do
+          if [[ ${ARG} == "--${PARAM}="* ]] || [[ ${ARG} == "-${_PARAM[$PARAM]}="* ]]; then
+            _ARG["$PARAM"]="${ARG#*=}"
+            ASSIGNED=1
+          fi
+        done
+
+        for FLAG in "${!_PARAM_FLAG[@]}"; do
+          if [[ ${ARG} == "--${FLAG}" ]] || [[ ${ARG} == "-${_PARAM_FLAG[$FLAG]}" ]]; then
+            _FLAG["$FLAG"]=1
+            ASSIGNED=1
+          fi
+        done
+
+        if [[ $ASSIGNED == 0 ]]; then
+          raise fatal "${ARG} is an invalid argument"
+        fi
+
+      done
+
+      for PARAM in "${!_PARAM[@]}"; do
+        if [[ -z "${_ARG[$PARAM]}" ]]; then
+          raise fatal "--${PARAM}=, -${_PARAM[$PARAM]}= needs to be specified when using $_MODULE $_ACTION"
+        fi
+      done
+
+      _method
+
+    fi
+
+  else
+    raise fatal "$_ACTION is not a valid action for $_MODULE."
+  fi
+else
+  raise fatal "$_MODULE is not a valid module"
+fi

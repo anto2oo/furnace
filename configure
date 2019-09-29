@@ -5,8 +5,7 @@ printf "======== \e[1mfurnace.sh initial setup\e[0m ========\n"
 # Comment the following lines if you want to force installation on anything other than CentOS 7.x
 if [ ! "$(awk '{print $4}' /etc/centos-release 2>/dev/null | cut -d. -f1)" == "7" ]; then
 
-  echo "Sorry, furnace only support Centos 7. If you want to force the installation,
-use the --force flag. However, installation will fail on other systems."
+  echo "Sorry, furnace only supports Centos 7."
   exit 1
 
 fi
@@ -26,20 +25,30 @@ fi
 
 # If the config file already exists, do not overwrite it
 if [ ! -f /etc/furnace.conf ]; then
-  cp furnace.conf /etc/
+  cp install/furnace.conf /etc/
 fi
 
+source /etc/furnace.conf
+
+# Setting up bash autocompletion
 cp install/bash/completion.sh /etc/bash_completion.d/furnace.sh
-chmod -x bin/*
-chmod +x bin/furnace
-cp -r bin/* /usr/local/bin/
-mkdir -p /usr/share/furnace/backup /usr/share/furnace/ssl /usr/share/furnace/dns /tmp/furnace
-cp -r templates wrap.c /usr/share/furnace/
 
-. furnace
-. /etc/furnace.conf
+# Copying files to the installation directory
+cp -r bin core templates furnace wrap "${INSTALL_DIR}"/
+chmod +x "${INSTALL_DIR}"/furnace
+mkdir "${INSTALL_DIR}"/backup "${INSTALL_DIR}"/ssl "${INSTALL_DIR}"/dns /tmp/furnace
+ln -s "${INSTALL_DIR}"/furnace /usr/local/bin/furnace
 
-if [ $UPGRADE_SERVICES == "yes" ]; then
+# Including the logging module
+source "${INSTALL_DIR}"/core/logging
+
+###################################
+####    INSTALLING SOFTWARE    ####
+###################################
+
+if [ "${UPGRADE_SERVICES}" == "yes" ]; then
+  raise notice "Installing remi repository"
+
   yum -q install -y \
     wget \
     epel-release \
@@ -48,6 +57,7 @@ if [ $UPGRADE_SERVICES == "yes" ]; then
   # Enable PHP from remi repository
   yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
   yum-config-manager --enable remi-php74
+
 fi
 
 raise notice "Installing packages from yum"

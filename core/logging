@@ -1,0 +1,35 @@
+#!/bin/bash
+
+raise() {
+
+  case "$1" in
+  fatal)
+    printf "\033[0;31m\033[1mFatal Error\033[0m : %s\n" "$2"
+    echo "                            	FATAL -> $2" >>"$LOG_FILE"
+    exit 1
+    ;;
+
+  warning)
+    if [ "$LOG_LEVEL" -le 2 ]; then
+      printf "\033[0;33mWarning\033[0m : %s\n" "$2"
+      echo "                            	WARNING -> $2" >>"$LOG_FILE"
+    fi
+    ;;
+
+  notice)
+    if [ "$LOG_LEVEL" -le 1 ]; then
+      printf "Notice : %s\n" "$2"
+      echo "                            	NOTICE -> $2" >>"$LOG_FILE"
+    fi
+    ;;
+
+  debug)
+    if [ "$LOG_LEVEL" -le 0 ]; then
+      printf "DEBUG : %s\n" "$2"
+      echo "                            	DEBUG -> $2" >>"$LOG_FILE"
+    fi
+    ;;
+
+  esac
+
+}
