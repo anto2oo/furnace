@@ -22,15 +22,15 @@ if [ ! -f /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf ]; then
     raise fatal "The domain ${_ARG[domain]} is not configured with user ${_ARG[username]}"
 fi
 
-mkdir -p /usr/share/furnace/ssl/${_ARG[domain]}
+mkdir -p "${INSTALL_DIR}"/ssl/${_ARG[domain]}
 
-username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/ssl/getssl.cfg > /usr/share/furnace/ssl/${_ARG[domain]}/getssl.cfg
+username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < "${INSTALL_DIR}"/templates/ssl/getssl.cfg > "${INSTALL_DIR}"/ssl/${_ARG[domain]}/getssl.cfg
 
-if /usr/share/furnace/ssl/getssl -q -w /usr/share/furnace/ssl "${_ARG[domain]}"; then
+if "${INSTALL_DIR}"/ssl/getssl -q -w "${INSTALL_DIR}"/ssl "${_ARG[domain]}"; then
     if [[ "${_FLAG["force-https"]}" = 1 ]]; then
-	   username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd/force-https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+	   username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < "${INSTALL_DIR}"/templates/httpd/force-https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
     else
-        username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd/https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+        username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < "${INSTALL_DIR}"/templates/httpd/https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
     fi
 
 	systemctl reload httpd

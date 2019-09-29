@@ -20,7 +20,7 @@ if [ ! -f /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf ]; then
     raise fatal "The domain ${_ARG[domain]} is not configured with user ${_ARG[username]}"
 fi
 
-username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd/host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < "${INSTALL_DIR}"/templates/httpd/host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
 
 systemctl reload httpd
 

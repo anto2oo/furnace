@@ -60,8 +60,8 @@ ${_ARG[domain]}
   gen_key=$(cut -d\" -f2 /etc/opendkim/keys/"${_ARG[domain]}"/default.txt | tr '\n' ' ')
 
   base_domain=$(echo ${_ARG[domain]} | awk -F "." '{printf $(NF-1)"."$NF }')
-  if [ -f /usr/share/furnace/dns/${base_domain}.txt ]; then
-    base_dns_zone=$(cat /usr/share/furnace/dns/${base_domain}.txt | sed '1d')
+  if [ -f "${INSTALL_DIR}"/dns/"${base_domain}".txt ]; then
+    base_dns_zone=$(cat "${INSTALL_DIR}"/dns/${base_domain}.txt | sed '1d')
   else
     base_dns_zone=""
   fi
@@ -79,9 +79,9 @@ default._domainkey.${_ARG[domain]}.    1   IN  TXT \"${gen_key}\"
 ;; DMARC and SPF Records
 ${_ARG[domain]}.   1   IN  TXT \"v=spf1 mx\"
 _dmarc.${_ARG[domain]}.    1   IN  TXT \"v=DMARC1; p=none\"
-" >/usr/share/furnace/dns/${base_domain}.txt
+" >"${INSTALL_DIR}"/dns/"${base_domain}".txt
 
-  domain="${_ARG[domain]}" server_addr="$SERVER_ADDR" gen_key="$gen_key" ctime="$ctime" envsubst '$domain $server_addr $gen_key $ctime' </usr/share/furnace/templates/dns/base.txt >>/usr/share/furnace/dns/"${_ARG[domain]}".txt
+  domain="${_ARG[domain]}" server_addr="$SERVER_ADDR" gen_key="$gen_key" ctime="$ctime" envsubst '$domain $server_addr $gen_key $ctime' <"${INSTALL_DIR}"/templates/dns/base.txt >>"${INSTALL_DIR}"/dns/"${_ARG[domain]}".txt
 
   systemctl reload opendkim postfix
 

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-source /etc/furnace.conf || echo "Failed to load /etc/furnace.conf" && exit 1
+source /etc/furnace.conf || { echo "Failed to load /etc/furnace.conf" >&2; exit 1; }
 
 # Include the all core functions
-source "${INSTALL_DIR}"/core/*
+for file in "${INSTALL_DIR}"/core/*; do source $file; done
 
 echo "[$(date --rfc-3339=seconds)] Trace from '$0 $1 $2'" >>"$LOG_FILE"
 

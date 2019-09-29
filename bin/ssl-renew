@@ -14,7 +14,7 @@ _method() {
 
 raise notice "Attempting renewal of certificates"
 
-if ! /usr/share/furnace/ssl/getssl -q -w /usr/share/furnace/ssl -a ; then
+if ! "${INSTALL_DIR}"/ssl/getssl -q -w "${INSTALL_DIR}"/ssl -a ; then
     raise fatal "Failed to renew SSL certificates (getssl error)"
 fi
 

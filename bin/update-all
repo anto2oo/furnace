@@ -12,6 +12,6 @@ _params() {
 
 _method() {
 
-/usr/local/bin/furnace update pkgs
+"${INSTALL_DIR}"/furnace update pkgs
 
 }
