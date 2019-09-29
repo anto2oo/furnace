@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source /etc/furnace.conf
-
 help_modules() {
 
   printf "Usage : furnace (MODULE) (ACTION) [PARAMETERS]\nAvailable modules :\n"
