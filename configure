@@ -5,27 +5,30 @@ printf "======== \e[1mfurnace.sh initial setup\e[0m ========\n"
 # Comment the following lines if you want to force installation on anything other than CentOS 7.x
 if [ ! "$(awk '{print $4}' /etc/centos-release 2>/dev/null | cut -d. -f1)" == "7" ]; then
 
-echo "Sorry, furnace only support Centos 7. If you want to force the installation,
+  echo "Sorry, furnace only support Centos 7. If you want to force the installation,
 use the --force flag. However, installation will fail on other systems."
-exit 1
+  exit 1
 
 fi
 # End of comment
 
-
 if [ ! "$(id -u)" == "0" ]; then
-   
-echo "Sorry, you must run this script as a superuser"
-exit 1
+
+  echo "Sorry, you must run this script as a superuser"
+  exit 1
 
 fi
 
 read -rp "Server FQDN [$(hostname)] : " server_fqdn
 if [ -z "$server_fqdn" ]; then
-    server_fqdn=$(hostname)
+  server_fqdn=$(hostname)
 fi
 
-cp templates/furnace.conf /etc/
+# If the config file already exists, do not overwrite it
+if [ ! -f /etc/furnace.conf ]; then
+  cp templates/furnace.conf /etc/
+fi
+
 cp templates/bash_completion /etc/bash_completion.d/furnace
 chmod -x bin/*
 chmod +x bin/furnace
@@ -36,22 +39,31 @@ cp -r templates wrap.c /usr/share/furnace/
 . furnace
 . /etc/furnace.conf
 
-# cp /usr/share/furnace/templates/furnace.repo /etc/yum.repos.d/
+if [ $UPGRADE_SERVICES == "yes" ]; then
+    yum -q install -y \
+      wget \
+      epel-release \
+      yum-utils
+
+    # Enable PHP from remi repository
+    yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+    yum-config-manager --enable remi-php74
+fi
 
 raise notice "Installing packages from yum"
 
 if ! (
-    yum -q install -y \
+  yum -q install -y \
     httpd \
     mod_ssl \
     bind-utils \
-    wget \
     openssl \
     mariadb-server \
     mariadb \
     php \
     php-mysql \
     php-fpm \
+    php-mcrypt \
     phpmyadmin \
     postfix \
     dovecot \
@@ -61,11 +73,10 @@ if ! (
     quota \
     quotatool \
     bash-completion \
-    proftpd \
-    ); then
-    raise fatal "Failed to get packages from yum. Exitting..."
+    proftpd
+); then
+  raise fatal "Failed to get packages from yum. Exitting..."
 fi
-
 
 ###################################
 ####   LINUX CONFIGURATIONS    ####
@@ -73,7 +84,7 @@ fi
 
 # Disabling SELinux
 if [ ! "$(getenforce)" == "Disabled" ]; then
-    sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+  sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 fi
 
 # Add appropriate services for the firewall
@@ -91,26 +102,25 @@ firewall-cmd -q --reload
 
 # Add a group to prevent users from logging in via SSH
 if ! groupadd furnace; then
-    raise warning "Group furnace already exists. Could not create it"
+  raise warning "Group furnace already exists. Could not create it"
 fi
 
 # Backing up and editing /etc/ssh/sshd_config
 # from template templates/sshd.conf
 if [ ! -f /usr/share/furnace/backup/sshd_config ]; then
-    cp /etc/ssh/sshd_config /usr/share/furnace/backup/sshd_config
-    cat /usr/share/furnace/templates/sshd.conf >> /etc/ssh/sshd_config
+  cp /etc/ssh/sshd_config /usr/share/furnace/backup/sshd_config
+  cat /usr/share/furnace/templates/sshd.conf >>/etc/ssh/sshd_config
 else
-    raise notice "/etc/ssh/sshd_config has already been edited by furnace. Not modifying it again."
+  raise notice "/etc/ssh/sshd_config has already been edited by furnace. Not modifying it again."
 fi
 
 # Generating a random SQL root password
-mysql_root_passwd="$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)"
+mysql_root_passwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
 
 # Storing this password into a MySQL conf file
 echo "[client]
 user=root
-password=$mysql_root_passwd" > /usr/share/furnace/my.root.cnf
-
+password=$mysql_root_passwd" >/usr/share/furnace/my.root.cnf
 
 # Applying correct permissions to prevent password to be read by others
 chmod 600 /usr/share/furnace/my.root.cnf
@@ -119,15 +129,14 @@ chmod 600 /usr/share/furnace/my.root.cnf
 cp /usr/share/furnace/templates/skeleton-default.html /var/www/html/index.html
 
 # Adding the default apache php pool
-username="apache" envsubst '$username' < /usr/share/furnace/templates/fpm-pool.conf > "/etc/php-fpm.d/apache.conf"
+username="apache" envsubst '$username' </usr/share/furnace/templates/fpm-pool.conf >"/etc/php-fpm.d/apache.conf"
 
 # Removing restrictions applied to normal users
 sed -i '/^php_admin_value/ d' /etc/php-fpm.d/apache.conf
 sed -i '/^php_admin_flag/ d' /etc/php-fpm.d/apache.conf
 sed -i '/^chdir/ d' /etc/php-fpm.d/apache.conf
 
-
-username="apache" envsubst '$username' < /usr/share/furnace/templates/initd.conf > "/etc/init.d/php-fpm-apache"
+username="apache" envsubst '$username' </usr/share/furnace/templates/initd.conf >"/etc/init.d/php-fpm-apache"
 chmod +x /etc/init.d/php-fpm-apache
 systemctl daemon-reload
 
@@ -136,26 +145,26 @@ systemctl daemon-reload
 raise notice "Adding cron jobs to cron.d/"
 
 # # 1. LE certificates renewal
-echo "0 12 1/1 * ? * root furnace ssl renew >> /usr/share/furnace/cron.log" > /etc/cron.daily/furnace-ssl-renew
+echo "0 12 1/1 * ? * root furnace ssl renew >> /usr/share/furnace/cron.log" >/etc/cron.daily/furnace-ssl-renew
 
 cp /etc/fstab /etc/fssave
-awk '$2~"^/$"{$4="usrquota,usrjquota=aquota.user,jqfmt=vfsv0,"$4}1' OFS="\t" /etc/fstab > /etc/fstemp
+awk '$2~"^/$"{$4="usrquota,usrjquota=aquota.user,jqfmt=vfsv0,"$4}1' OFS="\t" /etc/fstab >/etc/fstemp
 mv /etc/fstemp /etc/fstab
 if mount -o remount /; then
-    quotacheck -agcum
-    rm /etc/fssave
+  quotacheck -agcum
+  rm /etc/fssave
 else
-    rm /etc/fstab
-    mv /etc/fssave /etc/fstab
-    raise warning "Couldn't enable quotas (probably your fs doesn't support journaled quotas)"
-    mount -o remount /
+  rm /etc/fstab
+  mv /etc/fssave /etc/fstab
+  raise warning "Couldn't enable quotas (probably your fs doesn't support journaled quotas)"
+  mount -o remount /
 fi
 
 # Adding fail2ban jails
 cp /usr/share/furnace/templates/fail2ban-sshd.conf /etc/fail2ban/jail.d/sshd.conf
 
 wget -q -O /usr/share/furnace/ssl/getssl https://raw.githubusercontent.com/srvrco/getssl/master/getssl
-mkdir /usr/share/furnace/ssl/.getssl 
+mkdir /usr/share/furnace/ssl/.getssl
 cp /usr/share/furnace/templates/getssl.conf /usr/share/furnace/ssl/.getssl/getssl.cfg
 chmod +x /usr/share/furnace/ssl/getssl
 
@@ -167,55 +176,54 @@ raise notice "Starting mail setup..."
 
 # Creating groups/users to handle virtual mail
 if ! groupadd furnace_mail -g 2222; then
-    raise warning "Couldn't create furnace_mail group."
+  raise warning "Couldn't create furnace_mail group."
 fi
 
 if ! useradd furnace_mail -r -g 2222 -u 2222 -d /var/furnace_mail -m; then
-    raise warning "Couldn't create furnace_mail user."
+  raise warning "Couldn't create furnace_mail user."
 fi
-
 
 ##### 1. Postfix
 
 # Generating a certificate for TLS encryption,
 # if not exsting already
-if [ ! -f /usr/share/furnace/ssl/mail.key ] &&  [ ! -f /usr/share/furnace/ssl/mail.crt ]; then
-    openssl req -x509 -nodes -newkey rsa:2048 -keyout /usr/share/furnace/ssl/mail.key -out /usr/share/furnace/ssl/mail.crt -nodes -days 9999 -subj "/C=''/ST=''/L=''/O=''/OU=''/CN=''" > /dev/null 2>&1
+if [ ! -f /usr/share/furnace/ssl/mail.key ] && [ ! -f /usr/share/furnace/ssl/mail.crt ]; then
+  openssl req -x509 -nodes -newkey rsa:2048 -keyout /usr/share/furnace/ssl/mail.key -out /usr/share/furnace/ssl/mail.crt -nodes -days 9999 -subj "/C=''/ST=''/L=''/O=''/OU=''/CN=''" >/dev/null 2>&1
 else
-    raise notice "Not generating new cert, already existing in ssl/"
+  raise notice "Not generating new cert, already existing in ssl/"
 fi
 
 # Backing up and editing /etc/postfix/main.cf
 # from template templates/postfix.conf
 if [[ ! -f /usr/share/furnace/backup/postfix.main.cf ]]; then
-    cp /etc/postfix/main.cf /usr/share/furnace/backup/postfix.main.cf
-    cat /usr/share/furnace/templates/postfix.conf >> /etc/postfix/main.cf
+  cp /etc/postfix/main.cf /usr/share/furnace/backup/postfix.main.cf
+  cat /usr/share/furnace/templates/postfix.conf >>/etc/postfix/main.cf
 else
-    raise warning "/etc/postfix/main.cf has already been edited by furnace. Not modifying it again."
+  raise warning "/etc/postfix/main.cf has already been edited by furnace. Not modifying it again."
 fi
 
 touch /etc/postfix/aliases
 
 # Applying sed rules to /etc/postfix/master.cf
 if [ ! -f /usr/share/furnace/backup/postfix.master.cf ]; then
-    cp /etc/postfix/master.cf /usr/share/furnace/backup/postfix.master.cf
-    sed -i 's/#submission/submission/g' /etc/postfix/master.cf
-    sed -i '/-o syslog_name=postfix\/submission/s/^#//g' /etc/postfix/master.cf
-    sed -i '/-o smtpd_tls_security_level=encrypt/s/^#//g' /etc/postfix/master.cf
-    sed -i '/-o smtpd_sasl_auth_enable=yes/s/^#//g' /etc/postfix/master.cf
-    sed -i '/-o smtpd_recipient_restrictions=permit_sasl_authenticated,reject/s/^#//g' /etc/postfix/master.cf
-    sed -i '/-o milter_macro_daemon_name=ORIGINATING/s/^#//g' /etc/postfix/master.cf
-    sed -i '/#smtps/s/^#//g' /etc/postfix/master.cf
-    sed -i '/-o smtpd_tls_wrappermode=yes/s/^#//g' /etc/postfix/master.cf
-    sed -i '/-o smtpd_sasl_auth_enable=yes/s/^#//g' /etc/postfix/master.cf
+  cp /etc/postfix/master.cf /usr/share/furnace/backup/postfix.master.cf
+  sed -i 's/#submission/submission/g' /etc/postfix/master.cf
+  sed -i '/-o syslog_name=postfix\/submission/s/^#//g' /etc/postfix/master.cf
+  sed -i '/-o smtpd_tls_security_level=encrypt/s/^#//g' /etc/postfix/master.cf
+  sed -i '/-o smtpd_sasl_auth_enable=yes/s/^#//g' /etc/postfix/master.cf
+  sed -i '/-o smtpd_recipient_restrictions=permit_sasl_authenticated,reject/s/^#//g' /etc/postfix/master.cf
+  sed -i '/-o milter_macro_daemon_name=ORIGINATING/s/^#//g' /etc/postfix/master.cf
+  sed -i '/#smtps/s/^#//g' /etc/postfix/master.cf
+  sed -i '/-o smtpd_tls_wrappermode=yes/s/^#//g' /etc/postfix/master.cf
+  sed -i '/-o smtpd_sasl_auth_enable=yes/s/^#//g' /etc/postfix/master.cf
 else
-    raise warning "/etc/postfix/master.cf has already been edited by furnace. Not modifying it again."
+  raise warning "/etc/postfix/master.cf has already been edited by furnace. Not modifying it again."
 fi
 
-# Creating file structure to handle virtual 
+# Creating file structure to handle virtual
 # mailboxes
-if [ ! -d  /etc/postfix/furnace ]; then
-    mkdir /etc/postfix/furnace
+if [ ! -d /etc/postfix/furnace ]; then
+  mkdir /etc/postfix/furnace
 fi
 
 # Create virtual mailboxes databases
@@ -228,40 +236,35 @@ postmap /etc/postfix/furnace/mail_domains
 postmap /etc/postfix/furnace/mail_aliases
 postmap /etc/postfix/furnace/mail_mailbox
 
-
-
 ##### 2. Dovecot
 
 # Backing up and editing /etc/dovecot/dovecot.conf
 # from template templates/dovecot.conf
 if [ ! -f /usr/share/furnace/backup/dovecot.conf ]; then
-    mv /etc/dovecot/dovecot.conf /usr/share/furnace/backup/dovecot.conf
-    cp /usr/share/furnace/templates/dovecot.conf /etc/dovecot/
+  mv /etc/dovecot/dovecot.conf /usr/share/furnace/backup/dovecot.conf
+  cp /usr/share/furnace/templates/dovecot.conf /etc/dovecot/
 
 else
-    raise warning "/etc/dovecot/dovecot.conf has already been edited by furnace. Not modifying it again."
+  raise warning "/etc/dovecot/dovecot.conf has already been edited by furnace. Not modifying it again."
 fi
 
 # Creating the password file for dovecot
 touch /etc/dovecot/passwd
 chmod 600 /etc/dovecot/passwd
 
-
-
 ##### 3. DKIM Signature
 
 # Backing up and editing /etc/dovecot/dovecot.conf
 # from template templates/dovecot.conf
 if [ ! -f /usr/share/furnace/backup/opendkim.conf ]; then
-    mv /etc/opendkim.conf /usr/share/furnace/backup/opendkim.conf
-    cp /usr/share/furnace/templates/opendkim.conf /etc/opendkim.conf
-    chown opendkim:root /etc/opendkim.conf
+  mv /etc/opendkim.conf /usr/share/furnace/backup/opendkim.conf
+  cp /usr/share/furnace/templates/opendkim.conf /etc/opendkim.conf
+  chown opendkim:root /etc/opendkim.conf
 else
-    raise warning "/etc/opendkim.conf has already been edited by furnace. Not modifying it again."
+  raise warning "/etc/opendkim.conf has already been edited by furnace. Not modifying it again."
 fi
 
 raise notice "Mail setup done."
-
 
 ###################################
 ####     WEB SERVICES SETUP    ####
@@ -276,9 +279,9 @@ cp /usr/share/furnace/templates/httpd-default.conf /etc/httpd/conf.d/default.con
 
 # Generating a self-signed cert for web services
 if [ ! -f /usr/share/furnace/ssl/web_cert.pem ] && [ ! -f /usr/share/furnace/ssl/web_key.pem ]; then
-    openssl req -newkey rsa:2048 -nodes -keyout /usr/share/furnace/ssl/web_key.pem -x509 -out /usr/share/furnace/ssl/web_cert.pem -days 9999 -subj "/C=''/ST=''/L=''/O=''/OU=''/CN=''" > /dev/null 2>&1
+  openssl req -newkey rsa:2048 -nodes -keyout /usr/share/furnace/ssl/web_key.pem -x509 -out /usr/share/furnace/ssl/web_cert.pem -days 9999 -subj "/C=''/ST=''/L=''/O=''/OU=''/CN=''" >/dev/null 2>&1
 else
-    raise notice "not generating new cert, already existing in /usr/share/furnace/ssl/"
+  raise notice "not generating new cert, already existing in /usr/share/furnace/ssl/"
 fi
 
 ##### 1. Roundcube
@@ -286,18 +289,18 @@ fi
 raise notice "Installing Roundcube"
 
 # Generating a random password for Roundcube SQL
-mysql_roundcube_passwd="$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)"
+mysql_roundcube_passwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
 
 # Storing this password into a MySQL conf file
 echo "[client]
 user=roundcube_user
-password=$mysql_roundcube_passwd" > /usr/share/furnace/my.roundcube.cnf
+password=$mysql_roundcube_passwd" >/usr/share/furnace/my.roundcube.cnf
 
 # Applying correct permissions to prevent password to be read by others
 chmod 600 /usr/share/furnace/my.roundcube.cnf
 
 # Copying Roundcube settings from templates/roundcube-config.inc.php
-mysql_roundcube_passwd="$mysql_roundcube_passwd" envsubst '$mysql_roundcube_passwd' < /usr/share/furnace/templates/roundcube-config.inc.php > /etc/roundcubemail/config.inc.php
+mysql_roundcube_passwd="$mysql_roundcube_passwd" envsubst '$mysql_roundcube_passwd' </usr/share/furnace/templates/roundcube-config.inc.php >/etc/roundcubemail/config.inc.php
 chown apache:root /etc/roundcubemail/config.inc.php
 chmod 640 /etc/roundcubemail/config.inc.php
 
@@ -316,15 +319,15 @@ systemctl restart sshd
 # Settings MySQL defaults for roundcube
 mysql -u root -Bse "CREATE DATABASE roundcube_db;"
 mysql -u root -Bse "GRANT ALL ON roundcube_db.* TO roundcube_user@localhost IDENTIFIED BY '${mysql_roundcube_passwd}';"
-mysql --defaults-file=/usr/share/furnace/my.roundcube.cnf roundcube_db < /usr/share/roundcubewebmail/SQL/mysql.initial.sql
+mysql --defaults-file=/usr/share/furnace/my.roundcube.cnf roundcube_db </usr/share/roundcubemail/SQL/mysql.initial.sql
 
 # Disabling MySQL test user and creating a password for root
 mysql -u root -Bse "DROP USER ''@'localhost'; DROP USER ''@'$(hostname)'; DROP DATABASE test"
 mysql -u root -Bse "UPDATE mysql.user SET Password=PASSWORD('${mysql_root_passwd}') WHERE User='root'; FLUSH PRIVILEGES;"
 
-# Generating the default website account 
-admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)"
-echo "$admin_temp_pwd" > /usr/share/furnace/admin_paswd.cnf
+# Generating the default website account
+admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
+echo "$admin_temp_pwd" >/usr/share/furnace/admin_paswd.cnf
 furnace usr add -u=admin -p="$admin_temp_pwd"
 furnace web_host add -u=admin -d="$server_fqdn" --allow-web-services
 ln -s /usr/share/phpMyAdmin /home/admin/web/"$server_fqdn"/phpmyadmin
