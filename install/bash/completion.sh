@@ -1,11 +1,14 @@
+#!/bin/bash
+source /etc/furnace.conf
+
 _all_modules()
 {
-    find /usr/local/bin/ -name "furnace-*" | awk -F - '{print $2}' | sort | uniq
+    find "${INSTALL_DIR}"/bin/ -name "*" | awk -F - '{print $2}' | sort | uniq
 }
 
 _module_actions()
 {
-    find /usr/local/bin/ -name "furnace-${1}-*" | awk -F - '{print $3}' | sort | uniq
+    find "${INSTALL_DIR}"/bin/ -name "${1}-*" | awk -F - '{print $3}' | sort | uniq
 }
 
 _action_params()
