@@ -22,7 +22,7 @@ declare -A _ARG
 declare -A _FLAG
 declare -A _HELP
 
-if [ -n "$(find /usr/local/bin/ -maxdepth 1 -name "furnace-${_MODULE}*" -print -quit)" ]; then
+if [ -n "$(find "${INSTALL_DIR}"/bin/ -maxdepth 1 -name "${_MODULE}*" -print -quit)" ]; then
 
   if [[ $_ACTION == "-h" || $_ACTION == "--help" ]]; then
     help_actions "$_MODULE"
@@ -31,8 +31,8 @@ if [ -n "$(find /usr/local/bin/ -maxdepth 1 -name "furnace-${_MODULE}*" -print -
 
   raise debug "Sourcing ${INSTALL_DIR}-${_MODULE}-${_ACTION}"
 
-  if [[ -f /usr/local/bin/furnace-"$_MODULE"-"$_ACTION" ]]; then
-    source "${INSTALL_DIR}/bin/${_MODULE}-${_ACTION}"
+  if [[ -f "${INSTALL_DIR}"/bin/"$_MODULE"-"$_ACTION" ]]; then
+    source "${INSTALL_DIR}"/bin/"${_MODULE}-${_ACTION}"
 
     if [[ "$(type -t _params)" != "function" ]]; then
       raise fatal "The action file is missing a proper argument declaration"
