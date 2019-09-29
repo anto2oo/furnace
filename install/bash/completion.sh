@@ -3,12 +3,12 @@ source /etc/furnace.conf
 
 _all_modules()
 {
-    find "${INSTALL_DIR}"/bin/ -name "*" | awk -F - '{print $2}' | sort | uniq
+    find "${INSTALL_DIR}"/bin/ -mindepth 1 -name "*" -printf "%f\n" | awk -F - '{print $1}' | sort | uniq
 }
 
 _module_actions()
 {
-    find "${INSTALL_DIR}"/bin/ -name "${1}-*" | awk -F - '{print $3}' | sort | uniq
+    find "${INSTALL_DIR}"/bin/ -mindepth 1 -name "${1}-*" -printf "%f\n" | awk -F - '{print $2}' | sort | uniq
 }
 
 _action_params()
