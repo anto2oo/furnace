@@ -1,5 +1,4 @@
 #!/bin/bash
-source /etc/furnace.conf
 
 _all_modules()
 {
