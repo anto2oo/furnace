@@ -39,9 +39,9 @@ chown "${_ARG[username]}:${_ARG[username]}" /home/"${_ARG[username]}"/web/"${_AR
 
 chmod 751 /home/"${_ARG[username]}"/web/"${_ARG[domain]}"
 
-cp -n /usr/share/furnace/templates/skeleton-user.html /home/"${_ARG[username]}"/web/"${_ARG[domain]}"/index.php
+cp -n /usr/share/furnace/templates/skeleton/user.html /home/"${_ARG[username]}"/web/"${_ARG[domain]}"/index.php
 
-username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < /usr/share/furnace/templates/httpd/host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
 
 if [[ "${_FLAG["allow-web-services"]}" = 1 ]]; then
 	sed -i '/<\/Virtualhost>/i \

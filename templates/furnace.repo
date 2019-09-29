@@ -1,5 +1,0 @@
-[furnace]
-name=Furnace
-baseurl=http://repo.5-51.holdings
-gpgcheck=0
-enabled=1

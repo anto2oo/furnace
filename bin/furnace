@@ -31,7 +31,7 @@ raise(){
 		;;
 
 	esac
-	
+
 }
 
 source /etc/furnace.conf || raise fatal "Failed to load /etc/furnace.conf"
@@ -85,7 +85,7 @@ declare -A _FLAG
 declare -A _HELP
 
 if [ -n "$(find /usr/local/bin/ -maxdepth 1 -name "furnace-${_MODULE}*" -print -quit)" ]; then
-	
+
 	if [[ $_ACTION == "-h" || $_ACTION == "--help" ]]; then
 		help_actions "$_MODULE"
 		exit 0
@@ -102,7 +102,7 @@ if [ -n "$(find /usr/local/bin/ -maxdepth 1 -name "furnace-${_MODULE}*" -print -
 			raise fatal "The action file is missing a proper help section"
 		else
 			_params
-			for ARG in "${@}"; do 
+			for ARG in "${@}"; do
 				ASSIGNED=0
 
 				if [[ ${ARG} == "--help" ]] || [[ ${ARG} == "-h" ]]; then
@@ -115,7 +115,7 @@ if [ -n "$(find /usr/local/bin/ -maxdepth 1 -name "furnace-${_MODULE}*" -print -
 					exit 0
 				fi
 
-				for PARAM in "${!_PARAM[@]}"; do 
+				for PARAM in "${!_PARAM[@]}"; do
 					if [[ ${ARG} == "--${PARAM}="* ]] || [[ ${ARG} == "-${_PARAM[$PARAM]}="* ]]; then
 						_ARG["$PARAM"]="${ARG#*=}"
 						ASSIGNED=1
@@ -135,7 +135,7 @@ if [ -n "$(find /usr/local/bin/ -maxdepth 1 -name "furnace-${_MODULE}*" -print -
 
 			done
 
-			for PARAM in "${!_PARAM[@]}"; do 
+			for PARAM in "${!_PARAM[@]}"; do
 				if [[ -z "${_ARG[$PARAM]}" ]]; then
 					raise fatal "--${PARAM}=, -${_PARAM[$PARAM]}= needs to be specified when using $_MODULE $_ACTION"
 				fi

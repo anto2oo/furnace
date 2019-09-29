@@ -55,8 +55,6 @@ reload () {
     echo
 }
 
-
-# See how we were called.
 case "$1" in
   start)
     start

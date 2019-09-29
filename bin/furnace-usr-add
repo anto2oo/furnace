@@ -39,9 +39,9 @@ chmod -R 750 /home/"${_ARG[username]}"/*
 
 chown -R "${_ARG[username]}":"${_ARG[username]}" /home/"${_ARG[username]}"/*
 
-username="${_ARG[username]}" envsubst '$username' < /usr/share/furnace/templates/initd.conf > "/etc/init.d/php-fpm-${_ARG[username]}"
+username="${_ARG[username]}" envsubst '$username' < /usr/share/furnace/templates/php-fpm/init.sh > "/etc/init.d/php-fpm-${_ARG[username]}"
 
-username="${_ARG[username]}" envsubst '$username' < /usr/share/furnace/templates/fpm-pool.conf > "/etc/php-fpm.d/${_ARG[username]}.conf"
+username="${_ARG[username]}" envsubst '$username' < /usr/share/furnace/templates/php-fpm/pool.conf > "/etc/php-fpm.d/${_ARG[username]}.conf"
 
 raise notice "User ${_ARG[username]} has been created"
 

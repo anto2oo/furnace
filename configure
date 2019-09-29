@@ -26,10 +26,10 @@ fi
 
 # If the config file already exists, do not overwrite it
 if [ ! -f /etc/furnace.conf ]; then
-  cp templates/furnace.conf /etc/
+  cp furnace.conf /etc/
 fi
 
-cp templates/bash_completion /etc/bash_completion.d/furnace
+cp install/bash/completion.sh /etc/bash_completion.d/furnace.sh
 chmod -x bin/*
 chmod +x bin/furnace
 cp -r bin/* /usr/local/bin/
@@ -40,14 +40,14 @@ cp -r templates wrap.c /usr/share/furnace/
 . /etc/furnace.conf
 
 if [ $UPGRADE_SERVICES == "yes" ]; then
-    yum -q install -y \
-      wget \
-      epel-release \
-      yum-utils
+  yum -q install -y \
+    wget \
+    epel-release \
+    yum-utils
 
-    # Enable PHP from remi repository
-    yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-    yum-config-manager --enable remi-php74
+  # Enable PHP from remi repository
+  yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+  yum-config-manager --enable remi-php74
 fi
 
 raise notice "Installing packages from yum"
@@ -106,13 +106,9 @@ if ! groupadd furnace; then
 fi
 
 # Backing up and editing /etc/ssh/sshd_config
-# from template templates/sshd.conf
-if [ ! -f /usr/share/furnace/backup/sshd_config ]; then
-  cp /etc/ssh/sshd_config /usr/share/furnace/backup/sshd_config
-  cat /usr/share/furnace/templates/sshd.conf >>/etc/ssh/sshd_config
-else
-  raise notice "/etc/ssh/sshd_config has already been edited by furnace. Not modifying it again."
-fi
+# from template install/sshd/sshd.conf
+cp /etc/ssh/sshd_config /usr/share/furnace/backup/sshd_config
+cat /usr/share/furnace/install/sshd/sshd.conf >>/etc/ssh/sshd_config
 
 # Generating a random SQL root password
 mysql_root_passwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
@@ -126,17 +122,17 @@ password=$mysql_root_passwd" >/usr/share/furnace/my.root.cnf
 chmod 600 /usr/share/furnace/my.root.cnf
 
 # Adding an index to the default root
-cp /usr/share/furnace/templates/skeleton-default.html /var/www/html/index.html
+cp /usr/share/furnace/templates/skeleton/default.html /var/www/html/index.html
 
 # Adding the default apache php pool
-username="apache" envsubst '$username' </usr/share/furnace/templates/fpm-pool.conf >"/etc/php-fpm.d/apache.conf"
+username="apache" envsubst '$username' </usr/share/furnace/templates/php-fpm/pool.conf >/etc/php-fpm.d/apache.conf
 
 # Removing restrictions applied to normal users
 sed -i '/^php_admin_value/ d' /etc/php-fpm.d/apache.conf
 sed -i '/^php_admin_flag/ d' /etc/php-fpm.d/apache.conf
 sed -i '/^chdir/ d' /etc/php-fpm.d/apache.conf
 
-username="apache" envsubst '$username' </usr/share/furnace/templates/initd.conf >"/etc/init.d/php-fpm-apache"
+username="apache" envsubst '$username' </usr/share/furnace/templates/php-fpm/init.sh >/etc/init.d/php-fpm-apache
 chmod +x /etc/init.d/php-fpm-apache
 systemctl daemon-reload
 
@@ -161,11 +157,11 @@ else
 fi
 
 # Adding fail2ban jails
-cp /usr/share/furnace/templates/fail2ban-sshd.conf /etc/fail2ban/jail.d/sshd.conf
+cp /usr/share/furnace/install/fail2ban/sshd.conf /etc/fail2ban/jail.d/sshd.conf
 
 wget -q -O /usr/share/furnace/ssl/getssl https://raw.githubusercontent.com/srvrco/getssl/master/getssl
 mkdir /usr/share/furnace/ssl/.getssl
-cp /usr/share/furnace/templates/getssl.conf /usr/share/furnace/ssl/.getssl/getssl.cfg
+cp /usr/share/furnace/install/getssl/getssl.cfg /usr/share/furnace/ssl/.getssl/getssl.cfg
 chmod +x /usr/share/furnace/ssl/getssl
 
 ###################################
@@ -194,13 +190,9 @@ else
 fi
 
 # Backing up and editing /etc/postfix/main.cf
-# from template templates/postfix.conf
-if [[ ! -f /usr/share/furnace/backup/postfix.main.cf ]]; then
-  cp /etc/postfix/main.cf /usr/share/furnace/backup/postfix.main.cf
-  cat /usr/share/furnace/templates/postfix.conf >>/etc/postfix/main.cf
-else
-  raise warning "/etc/postfix/main.cf has already been edited by furnace. Not modifying it again."
-fi
+# from template install/postfix/main.cf
+cp /etc/postfix/main.cf /usr/share/furnace/backup/postfix.main.cf
+cat /usr/share/furnace/install/postfix/main.cf >>/etc/postfix/main.cf
 
 touch /etc/postfix/aliases
 
@@ -239,14 +231,9 @@ postmap /etc/postfix/furnace/mail_mailbox
 ##### 2. Dovecot
 
 # Backing up and editing /etc/dovecot/dovecot.conf
-# from template templates/dovecot.conf
-if [ ! -f /usr/share/furnace/backup/dovecot.conf ]; then
-  mv /etc/dovecot/dovecot.conf /usr/share/furnace/backup/dovecot.conf
-  cp /usr/share/furnace/templates/dovecot.conf /etc/dovecot/
-
-else
-  raise warning "/etc/dovecot/dovecot.conf has already been edited by furnace. Not modifying it again."
-fi
+# from template install/dovecot/dovecot.conf
+mv /etc/dovecot/dovecot.conf /usr/share/furnace/backup/dovecot.conf
+cp /usr/share/furnace/install/dovecot/dovecot.conf /etc/dovecot/
 
 # Creating the password file for dovecot
 touch /etc/dovecot/passwd
@@ -255,14 +242,10 @@ chmod 600 /etc/dovecot/passwd
 ##### 3. DKIM Signature
 
 # Backing up and editing /etc/dovecot/dovecot.conf
-# from template templates/dovecot.conf
-if [ ! -f /usr/share/furnace/backup/opendkim.conf ]; then
-  mv /etc/opendkim.conf /usr/share/furnace/backup/opendkim.conf
-  cp /usr/share/furnace/templates/opendkim.conf /etc/opendkim.conf
-  chown opendkim:root /etc/opendkim.conf
-else
-  raise warning "/etc/opendkim.conf has already been edited by furnace. Not modifying it again."
-fi
+# from template install//dovecot.conf
+mv /etc/opendkim.conf /usr/share/furnace/backup/opendkim.conf
+cp /usr/share/furnace/install/opendkim/opendkim.conf /etc/opendkim.conf
+chown opendkim:root /etc/opendkim.conf
 
 raise notice "Mail setup done."
 
@@ -271,11 +254,11 @@ raise notice "Mail setup done."
 ###################################
 
 mv /etc/httpd/conf/httpd.conf /usr/share/furnace/backup
-cp /usr/share/furnace/templates/httpd.conf /etc/httpd/conf/
+cp /usr/share/furnace/install/httpd/httpd.conf /etc/httpd/conf/
 
 # Acding configurations for phpMyAdmin and Roundcube to httpd
-cp /usr/share/furnace/templates/httpd-services.conf /etc/httpd/conf/services.conf
-cp /usr/share/furnace/templates/httpd-default.conf /etc/httpd/conf.d/default.conf
+cp /usr/share/furnace/install/httpd/services.conf /etc/httpd/conf/services.conf
+cp /usr/share/furnace/install/httpd/default.conf /etc/httpd/conf.d/default.conf
 
 # Generating a self-signed cert for web services
 if [ ! -f /usr/share/furnace/ssl/web_cert.pem ] && [ ! -f /usr/share/furnace/ssl/web_key.pem ]; then
@@ -299,8 +282,8 @@ password=$mysql_roundcube_passwd" >/usr/share/furnace/my.roundcube.cnf
 # Applying correct permissions to prevent password to be read by others
 chmod 600 /usr/share/furnace/my.roundcube.cnf
 
-# Copying Roundcube settings from templates/roundcube-config.inc.php
-mysql_roundcube_passwd="$mysql_roundcube_passwd" envsubst '$mysql_roundcube_passwd' </usr/share/furnace/templates/roundcube-config.inc.php >/etc/roundcubemail/config.inc.php
+# Copying Roundcube settings from install/config.inc.php
+mysql_roundcube_passwd="$mysql_roundcube_passwd" envsubst '$mysql_roundcube_passwd' </usr/share/furnace/install/roundcubemail/config.inc.php >/etc/roundcubemail/config.inc.php
 chown apache:root /etc/roundcubemail/config.inc.php
 chmod 640 /etc/roundcubemail/config.inc.php
 
