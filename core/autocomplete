@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /etc/furnace
+source /etc/furnace.conf
 
 help_modules() {
 
