@@ -28,9 +28,9 @@ username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domai
 
 if "${INSTALL_DIR}"/ssl/getssl -q -w "${INSTALL_DIR}"/ssl "${_ARG[domain]}"; then
     if [[ "${_FLAG["force-https"]}" = 1 ]]; then
-	   username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < "${INSTALL_DIR}"/templates/httpd/force-https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+	   username="${_ARG[username]}" domain="${_ARG[domain]}" INSTALL_DIR="${INSTALL_DIR}" envsubst '$username,$domain,$INSTALL_DIR' < "${INSTALL_DIR}"/templates/httpd/force-https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
     else
-        username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < "${INSTALL_DIR}"/templates/httpd/https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
+        username="${_ARG[username]}" domain="${_ARG[domain]}" INSTALL_DIR="${INSTALL_DIR}" envsubst '$username,$domain,$INSTALL_DIR' < "${INSTALL_DIR}"/templates/httpd/https-host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
     fi
 
 	systemctl reload httpd

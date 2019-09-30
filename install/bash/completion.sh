@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /etc/furnace.conf
+
 _all_modules()
 {
     find "${INSTALL_DIR}"/bin/ "${INSTALL_DIR}"/modules/ -mindepth 1 -name "*" -printf "%f\n" | awk -F - '{print $1}' | sort | uniq
