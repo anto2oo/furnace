@@ -235,7 +235,7 @@ postmap /etc/postfix/furnace/mail_mailbox
 # Backing up and editing /etc/dovecot/dovecot.conf
 # from template install/dovecot/dovecot.conf
 mv /etc/dovecot/dovecot.conf "${INSTALL_DIR}"/backup/dovecot.conf
-cp install/dovecot/dovecot.conf /etc/dovecot/
+INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/dovecot/dovecot.conf >/etc/dovecot/dovecot.conf
 
 # Creating the password file for dovecot
 touch /etc/dovecot/passwd
