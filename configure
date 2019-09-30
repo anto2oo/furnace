@@ -265,7 +265,7 @@ INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/httpd/httpd.conf >
 
 # Acding configurations for phpMyAdmin and Roundcube to httpd
 cp install/httpd/services.conf /etc/httpd/conf/services.conf
-cp install/httpd/default.conf /etc/httpd/conf.d/default.conf
+INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/httpd/default.conf >/etc/httpd/conf.d/default.conf
 
 # Generating a self-signed cert for web services
 if [ ! -f "${INSTALL_DIR}"/ssl/web_cert.pem ] && [ ! -f "${INSTALL_DIR}"/ssl/web_key.pem ]; then
