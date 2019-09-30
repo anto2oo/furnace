@@ -1,10 +1,8 @@
-
-
-#######################################
-# Below this line is the default config
-# file for furnace that has been
-# automatically added to this file.
-#######################################
+#########################################
+# This is a default furnace config
+# file. Do NOT change this file, it may
+# be overwritten when furnace updates
+#########################################
 
 queue_directory = /var/spool/postfix
 command_directory = /usr/sbin

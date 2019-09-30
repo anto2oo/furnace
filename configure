@@ -206,25 +206,13 @@ fi
 # Backing up and editing /etc/postfix/main.cf
 # from template install/postfix/main.cf
 cp /etc/postfix/main.cf "${INSTALL_DIR}"/backup/postfix.main.cf
-cat install/postfix/main.cf >>/etc/postfix/main.cf
+cat install/postfix/main.cf >/etc/postfix/main.cf
 
 touch /etc/postfix/aliases
 
 # Applying sed rules to /etc/postfix/master.cf
-if [ ! -f "${INSTALL_DIR}"/backup/postfix.master.cf ]; then
-  cp /etc/postfix/master.cf "${INSTALL_DIR}"/backup/postfix.master.cf
-  sed -i 's/#submission/submission/g' /etc/postfix/master.cf
-  sed -i '/-o syslog_name=postfix\/submission/s/^#//g' /etc/postfix/master.cf
-  sed -i '/-o smtpd_tls_security_level=encrypt/s/^#//g' /etc/postfix/master.cf
-  sed -i '/-o smtpd_sasl_auth_enable=yes/s/^#//g' /etc/postfix/master.cf
-  sed -i '/-o smtpd_recipient_restrictions=permit_sasl_authenticated,reject/s/^#//g' /etc/postfix/master.cf
-  sed -i '/-o milter_macro_daemon_name=ORIGINATING/s/^#//g' /etc/postfix/master.cf
-  sed -i '/#smtps/s/^#//g' /etc/postfix/master.cf
-  sed -i '/-o smtpd_tls_wrappermode=yes/s/^#//g' /etc/postfix/master.cf
-  sed -i '/-o smtpd_sasl_auth_enable=yes/s/^#//g' /etc/postfix/master.cf
-else
-  raise warning "/etc/postfix/master.cf has already been edited by furnace. Not modifying it again."
-fi
+cp /etc/postfix/master.cf "${INSTALL_DIR}"/backup/postfix.master.cf
+cat install/postfix/master.cf >/etc/postfix/master.cf
 
 # Creating file structure to handle virtual
 # mailboxes
@@ -325,8 +313,8 @@ mysql -u root -Bse "UPDATE mysql.user SET Password=PASSWORD('${mysql_root_passwd
 # Generating the default website account
 admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
 echo "$admin_temp_pwd" >"${INSTALL_DIR}"/admin_paswd.cnf
-furnace usr add -u=admin -p="$admin_temp_pwd"
-furnace web_host add -u=admin -d="$server_fqdn" --allow-web-services
+furnace usr add --username admin --password "$admin_temp_pwd"
+furnace web_host add --username admin --domain "$server_fqdn" --allow-web-services
 ln -s /usr/share/phpMyAdmin /home/admin/web/"$server_fqdn"/phpmyadmin
 ln -s /var/www/html/webmail /home/admin/web/"$server_fqdn"/webmail
 
