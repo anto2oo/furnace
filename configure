@@ -60,7 +60,7 @@ if [ "${UPGRADE_SERVICES}" == "yes" ]; then
 
   # Enable PHP from remi repository
   yum install -q -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-  yum-config-manager --enable remi-php74
+  yum-config-manager --enable remi-php73
 
 fi
 
@@ -181,6 +181,8 @@ cp install/fail2ban/sshd.conf /etc/fail2ban/jail.d/sshd.conf
 wget -q -O "${INSTALL_DIR}"/ssl/getssl https://raw.githubusercontent.com/srvrco/getssl/master/getssl
 mkdir "${INSTALL_DIR}"/ssl/.getssl
 cp install/getssl/getssl.cfg "${INSTALL_DIR}"/ssl/.getssl/getssl.cfg
+INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/getssl/getssl.cfg >"${INSTALL_DIR}"/ssl/.getssl/getssl.cfg
+
 chmod +x "${INSTALL_DIR}"/ssl/getssl
 
 ###################################
@@ -301,9 +303,9 @@ raise notice "Configuring phpMyAdmin"
 raise notice "Restarting services..."
 
 # Starting all the services
-systemctl -q enable httpd mariadb opendkim postfix dovecot fail2ban
+systemctl -q enable httpd mariadb opendkim postfix dovecot fail2ban proftpd
 /sbin/chkconfig php-fpm-apache on
-systemctl start httpd mariadb php-fpm-apache opendkim postfix dovecot fail2ban
+systemctl start httpd mariadb php-fpm-apache opendkim postfix dovecot fail2ban proftpd
 systemctl restart sshd
 
 # Settings MySQL defaults for roundcube
