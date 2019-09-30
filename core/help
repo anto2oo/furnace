@@ -5,6 +5,6 @@ help() {
   _help
 
   printf "Usage : furnace %s %s %s\nDescription : %s\nOptions :\n" "${_MODULE}" "${_ACTION}" "${_USAGE}" "${_DESCRIPTION}"
-  printf -- "%s" "$(for PARAM in "${!_PARAM[@]}"; do echo "--${PARAM}=, -${_PARAM[$PARAM]}= | ${_HELP[$PARAM]}\n"; done)$(for PARAM_FLAG in "${!_PARAM_FLAG[@]}"; do echo "--${PARAM_FLAG}, -${_PARAM_FLAG[$PARAM_FLAG]} | ${_HELP[$PARAM_FLAG]}\n"; done)
+  printf -- "%s" "$(for PARAM in "${!_PARAM[@]}"; do echo "--${PARAM}, -${_PARAM[$PARAM]} | ${_HELP[$PARAM]}\n"; done)$(for PARAM_FLAG in "${!_PARAM_FLAG[@]}"; do echo "--${PARAM_FLAG}, -${_PARAM_FLAG[$PARAM_FLAG]} | ${_HELP[$PARAM_FLAG]}\n"; done)
 	" | column -t -s'|'
 }

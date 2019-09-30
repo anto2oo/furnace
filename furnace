@@ -39,10 +39,15 @@ if [ -n "$(find "${INSTALL_DIR}"/bin/ -maxdepth 1 -name "${_MODULE}*" -print -qu
     elif [[ "$(type -t _help)" != "function" ]]; then
       raise fatal "The action file is missing a proper help section"
     else
+
       _params
-      for ARG in "${@}"; do
+
+      # For each argument
+      while (( "$#" )); do
+        ARG=$1
         ASSIGNED=0
 
+        # Special arguments declared here
         if [[ ${ARG} == "--help" ]] || [[ ${ARG} == "-h" ]]; then
           help
           exit 0
@@ -53,20 +58,25 @@ if [ -n "$(find "${INSTALL_DIR}"/bin/ -maxdepth 1 -name "${_MODULE}*" -print -qu
           exit 0
         fi
 
+        # Check if the given arg is declared as argument
         for PARAM in "${!_PARAM[@]}"; do
-          if [[ ${ARG} == "--${PARAM}="* ]] || [[ ${ARG} == "-${_PARAM[$PARAM]}="* ]]; then
-            _ARG["$PARAM"]="${ARG#*=}"
+          if [[ ${ARG} == "--${PARAM}"* ]] || [[ ${ARG} == "-${_PARAM[$PARAM]}"* ]]; then
+            _ARG["$PARAM"]="${2}"
             ASSIGNED=1
+            shift 2
           fi
         done
 
+        # Or as flag
         for FLAG in "${!_PARAM_FLAG[@]}"; do
           if [[ ${ARG} == "--${FLAG}" ]] || [[ ${ARG} == "-${_PARAM_FLAG[$FLAG]}" ]]; then
             _FLAG["$FLAG"]=1
             ASSIGNED=1
+            shift 1
           fi
         done
 
+        # If we didn't find it, raise an error
         if [[ $ASSIGNED == 0 ]]; then
           raise fatal "${ARG} is an invalid argument"
         fi
@@ -75,7 +85,7 @@ if [ -n "$(find "${INSTALL_DIR}"/bin/ -maxdepth 1 -name "${_MODULE}*" -print -qu
 
       for PARAM in "${!_PARAM[@]}"; do
         if [[ -z "${_ARG[$PARAM]}" ]]; then
-          raise fatal "--${PARAM}=, -${_PARAM[$PARAM]}= needs to be specified when using $_MODULE $_ACTION"
+          raise fatal "--${PARAM}, -${_PARAM[$PARAM]} needs to be specified when using $_MODULE $_ACTION"
         fi
       done
 

@@ -16,6 +16,6 @@ options() {
 
   _help
 
-  for PARAM in "${!_PARAM[@]}"; do printf -- "--%s= " "${PARAM}"; done
-  for PARAM_FLAG in "${!_PARAM_FLAG[@]}"; do printf -- "--%s " "${PARAM_FLAG}"; done
+  for PARAM in "${!_PARAM[@]}"; do printf -- "--%s" "${PARAM}"; done
+  for PARAM_FLAG in "${!_PARAM_FLAG[@]}"; do printf -- "--%s" "${PARAM_FLAG}"; done
 }
