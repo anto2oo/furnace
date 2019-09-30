@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# If the config file already exists, do not overwrite it
+if [ ! -f /etc/furnace.conf ]; then
+  cp install/furnace.conf /etc/
+fi
+
+source /etc/furnace.conf || { echo "Could not load /etc/furnace.conf"; exit 1; }
+
 printf "======== \e[1mfurnace.sh initial setup\e[0m ========\n"
 
 # Comment the following lines if you want to force installation on anything other than CentOS 7.x
@@ -22,13 +29,6 @@ read -rp "Server FQDN [$(hostname)] : " server_fqdn
 if [ -z "$server_fqdn" ]; then
   server_fqdn=$(hostname)
 fi
-
-# If the config file already exists, do not overwrite it
-if [ ! -f /etc/furnace.conf ]; then
-  cp install/furnace.conf /etc/
-fi
-
-source /etc/furnace.conf
 
 if [ ! -d "${INSTALL_DIR}" ]; then
     mkdir -p "${INSTALL_DIR}"
@@ -140,6 +140,9 @@ cp "${INSTALL_DIR}"/templates/skeleton/default.html /var/www/html/index.html
 
 # Adding the default apache php pool
 username="apache" envsubst '$username' <"${INSTALL_DIR}"/templates/php-fpm/pool.conf >/etc/php-fpm.d/apache.conf
+
+# Creating the directory for php-fpm sockets
+mkdir /var/run/php-fpm
 
 # Removing restrictions applied to normal users
 sed -i '/^php_admin_value/ d' /etc/php-fpm.d/apache.conf
@@ -256,7 +259,7 @@ raise notice "Mail setup done."
 ###################################
 
 mv /etc/httpd/conf/httpd.conf "${INSTALL_DIR}"/backup
-cp install/httpd/httpd.conf /etc/httpd/conf/
+INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/httpd/httpd.conf >/etc/httpd/conf/httpd.conf
 
 # Acding configurations for phpMyAdmin and Roundcube to httpd
 cp install/httpd/services.conf /etc/httpd/conf/services.conf
