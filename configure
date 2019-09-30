@@ -40,7 +40,7 @@ cp install/bash/completion.sh /etc/bash_completion.d/furnace.sh
 # Copying files to the installation directory
 cp -r bin core templates furnace wrap "${INSTALL_DIR}"/
 chmod +x "${INSTALL_DIR}"/furnace
-mkdir "${INSTALL_DIR}"/backup "${INSTALL_DIR}"/ssl "${INSTALL_DIR}"/dns /tmp/furnace
+mkdir "${INSTALL_DIR}"/backup "${INSTALL_DIR}"/ssl "${INSTALL_DIR}"/dns "${INSTALL_DIR}"/modules /tmp/furnace
 ln -s "${INSTALL_DIR}"/furnace /usr/local/bin/furnace
 
 # Including the logging module
@@ -68,6 +68,8 @@ raise notice "Installing packages from yum"
 
 if ! (
   yum install -q -y \
+    wget \
+    epel-release \
     httpd \
     mod_ssl \
     bind-utils \
