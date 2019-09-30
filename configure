@@ -316,8 +316,8 @@ mysql -u root -Bse "UPDATE mysql.user SET Password=PASSWORD('${mysql_root_passwd
 # Generating the default website account
 admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
 echo "$admin_temp_pwd" >"${INSTALL_DIR}"/admin_paswd.cnf
-furnace usr add --username admin --password "$admin_temp_pwd"
-furnace web_host add --username admin --domain "$server_fqdn" --allow-web-services
+furnace user add --username admin --password "$admin_temp_pwd"
+furnace website add --username admin --domain "$server_fqdn" --allow-web-services
 ln -s /usr/share/phpMyAdmin /home/admin/web/"$server_fqdn"/phpmyadmin
 ln -s /var/www/html/webmail /home/admin/web/"$server_fqdn"/webmail
 
