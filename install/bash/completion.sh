@@ -28,7 +28,6 @@ _furnace_comp()
             fi
                 options=$(_module_actions "$prev")
         else
-            compopt -o nospace
             options=$(_action_params "${COMP_WORDS[1]}" "${COMP_WORDS[2]}")
         fi
 
