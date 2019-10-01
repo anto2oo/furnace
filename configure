@@ -130,7 +130,7 @@ cp /etc/ssh/sshd_config "${INSTALL_DIR}"/backup/sshd_config
 cat install/sshd/sshd.conf >>/etc/ssh/sshd_config
 
 # Generating a random SQL root password
-mysql_root_passwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
+mysql_root_passwd="$(_generate_password)"
 
 # Storing this password into a MySQL conf file
 echo "[client]
@@ -282,7 +282,7 @@ fi
 raise notice "Installing Roundcube"
 
 # Generating a random password for Roundcube SQL
-mysql_roundcube_passwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
+mysql_roundcube_passwd="$(_generate_password)"
 
 # Storing this password into a MySQL conf file
 echo "[client]
