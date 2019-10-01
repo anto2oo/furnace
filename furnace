@@ -32,7 +32,7 @@ elif [[ -f "${INSTALL_DIR}"/modules/"$_MODULE"-"$_ACTION" ]]; then
   raise debug "Sourcing module ${INSTALL_DIR}-${_MODULE}-${_ACTION}"
   source "${INSTALL_DIR}"/modules/"${_MODULE}-${_ACTION}"
 else
-  raise fatal "$_MODULE is not a valid module"
+  raise fatal "Command $_MODULE $_ACTION is invalid"
 fi
 
 if [[ "$(type -t _params)" != "function" ]]; then
