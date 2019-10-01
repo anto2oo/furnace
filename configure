@@ -44,7 +44,13 @@ cp install/bash/completion.sh /etc/bash_completion.d/furnace.sh
 cp -r bin core templates furnace wrap "${INSTALL_DIR}"/
 chmod +x "${INSTALL_DIR}"/furnace
 mkdir -p "${INSTALL_DIR}"/{backup,ssl/{,gen,domains,self},dns,modules} /tmp/furnace
-ln -s "${INSTALL_DIR}"/furnace /usr/local/bin/furnace
+
+if [ ! -L /usr/local/bin/furnace ]; then
+  ln -s "${INSTALL_DIR}"/furnace /usr/local/bin/furnace
+else
+  raise warning "furnace is already present on your system. Assuming you're updating."
+  UPDATING=true
+fi
 
 # Including the logging module
 source "${INSTALL_DIR}"/core/logging
@@ -120,8 +126,10 @@ firewall-cmd -q --permanent --zone=public --add-service=ftp
 firewall-cmd -q --reload
 
 # Add a group to prevent users from logging in via SSH
-if ! groupadd furnace; then
-  raise warning "Group furnace already exists. Could not create it"
+if [ -z "${UPGRADING}" ]; then
+  if ! groupadd furnace; then
+    raise warning "Group furnace already exists. Could not create it"
+  fi
 fi
 
 # Backing up and editing /etc/ssh/sshd_config
@@ -129,31 +137,25 @@ fi
 cp /etc/ssh/sshd_config "${INSTALL_DIR}"/backup/sshd_config
 cat install/sshd/sshd.conf >>/etc/ssh/sshd_config
 
-# Generating a random SQL root password
-mysql_root_passwd="$(_generate_password)"
+if [ -z "${UPGRADING}" ]; then
+  # Generating a random SQL root password
+  MYSQL_PASSWORD="$(_generate_password)"
 
-# Storing this password into a MySQL conf file
-echo "[client]
-user=root
-password=$mysql_root_passwd" >"${INSTALL_DIR}"/my.root.cnf
+  # Storing this password into a MySQL conf file
+  NAME="client" USERNAME="root" PASSWORD="$MYSQL_PASSWORD" envsubst '$NAME,$USERNAME,PASSWORD' <install/mariadb/defaults.cnf >"${INSTALL_DIR}"/my.root.cnf
 
-# Applying correct permissions to prevent password to be read by others
-chmod 600 "${INSTALL_DIR}"/my.root.cnf
+  # Applying correct permissions to prevent password to be read by others
+  chmod 600 "${INSTALL_DIR}"/my.root.cnf
+fi
 
 # Adding an index to the default root
 cp "${INSTALL_DIR}"/templates/skeleton/default.html /var/www/html/index.html
 
-# Adding the default apache php pool
-username="apache" envsubst '$username' <"${INSTALL_DIR}"/templates/php-fpm/pool.conf >/etc/php-fpm.d/apache.conf
-
 # Creating the directory for php-fpm sockets
 mkdir -p /var/run/php-fpm
 
-# Removing restrictions applied to normal users
-sed -i '/^php_admin_value/ d' /etc/php-fpm.d/apache.conf
-sed -i '/^php_admin_flag/ d' /etc/php-fpm.d/apache.conf
-sed -i '/^chdir/ d' /etc/php-fpm.d/apache.conf
-
+# Adding the default apache php pool
+cp install/php-fpm/apache.conf /etc/php-fpm.d/apache.conf
 username="apache" envsubst '$username' <"${INSTALL_DIR}"/templates/php-fpm/init.sh >/etc/init.d/php-fpm-apache
 chmod +x /etc/init.d/php-fpm-apache
 systemctl daemon-reload
@@ -165,24 +167,29 @@ raise notice "Adding cron jobs to cron.d/"
 # # 1. LE certificates renewal
 echo "0 12 1/1 * ? * root furnace ssl renew >> ${INSTALL_DIR}/cron.log" >/etc/cron.daily/furnace-ssl-renew
 
-cp /etc/fstab /etc/fssave
-awk '$2~"^/$"{$4="usrquota,usrjquota=aquota.user,jqfmt=vfsv0,"$4}1' OFS="\t" /etc/fstab >/etc/fstemp
-mv /etc/fstemp /etc/fstab
-if mount -o remount /; then
-  quotacheck -agcum
-  rm /etc/fssave
-else
-  rm /etc/fstab
-  mv /etc/fssave /etc/fstab
-  raise warning "Couldn't enable quotas (probably your fs doesn't support journaled quotas)"
-  mount -o remount /
+if [ -z "${UPGRADING}" ]; then
+  cp /etc/fstab /etc/fssave
+  awk '$2~"^/$"{$4="usrquota,usrjquota=aquota.user,jqfmt=vfsv0,"$4}1' OFS="\t" /etc/fstab >/etc/fstemp
+  mv /etc/fstemp /etc/fstab
+  if mount -o remount /; then
+    quotacheck -agcum
+    rm /etc/fssave
+  else
+    rm /etc/fstab
+    mv /etc/fssave /etc/fstab
+    raise warning "Couldn't enable quotas (probably your fs doesn't support journaled quotas)"
+    mount -o remount /
+  fi
 fi
 
 # Adding fail2ban jails
 cp install/fail2ban/sshd.conf /etc/fail2ban/jail.d/sshd.conf
 
+# Downloading getssl in order to generate LE certificates
 wget -q -O "${INSTALL_DIR}"/ssl/getssl https://raw.githubusercontent.com/srvrco/getssl/master/getssl
 cp install/getssl/getssl.cfg "${INSTALL_DIR}"/ssl/getssl.cfg
+
+# Copying getssl config
 INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/getssl/getssl.cfg >"${INSTALL_DIR}"/ssl/.getssl/getssl.cfg
 
 chmod +x "${INSTALL_DIR}"/ssl/getssl
@@ -194,12 +201,15 @@ chmod +x "${INSTALL_DIR}"/ssl/getssl
 raise notice "Starting mail setup..."
 
 # Creating groups/users to handle virtual mail
-if ! groupadd furnace_mail -g 2222; then
-  raise warning "Couldn't create furnace_mail group."
-fi
+if [ -z "${UPGRADING}" ]; then
 
-if ! useradd furnace_mail -r -g 2222 -u 2222 -d /var/furnace_mail -m; then
-  raise warning "Couldn't create furnace_mail user."
+  if ! groupadd furnace_mail -g 2222; then
+    raise warning "Couldn't create furnace_mail group."
+  fi
+
+  if ! useradd furnace_mail -r -g 2222 -u 2222 -d /var/furnace_mail -m; then
+    raise warning "Couldn't create furnace_mail user."
+  fi
 fi
 
 ##### 1. Postfix
@@ -215,13 +225,13 @@ fi
 # Backing up and editing /etc/postfix/main.cf
 # from template install/postfix/main.cf
 cp /etc/postfix/main.cf "${INSTALL_DIR}"/backup/postfix.main.cf
-cat install/postfix/main.cf >/etc/postfix/main.cf
+cp install/postfix/main.cf /etc/postfix/main.cf
 
 touch /etc/postfix/aliases
 
 # Applying sed rules to /etc/postfix/master.cf
 cp /etc/postfix/master.cf "${INSTALL_DIR}"/backup/postfix.master.cf
-cat install/postfix/master.cf >/etc/postfix/master.cf
+cp install/postfix/master.cf /etc/postfix/master.cf
 
 # Creating file structure to handle virtual
 # mailboxes
@@ -281,21 +291,22 @@ fi
 
 raise notice "Installing Roundcube"
 
-# Generating a random password for Roundcube SQL
-mysql_roundcube_passwd="$(_generate_password)"
+if [ -z "${UPGRADING}" ]; then
 
-# Storing this password into a MySQL conf file
-echo "[client]
-user=roundcube_user
-password=$mysql_roundcube_passwd" >"${INSTALL_DIR}"/my.roundcube.cnf
+  # Generating a random password for Roundcube SQL
+  RC_PASSWORD="$(_generate_password)"
 
-# Applying correct permissions to prevent password to be read by others
-chmod 600 "${INSTALL_DIR}"/my.roundcube.cnf
+  # Storing this password into a MySQL conf file
+  NAME="client" USERNAME="roundcube_user" PASSWORD="$RC_PASSWORD" envsubst '$NAME,$USERNAME,PASSWORD' <install/mariadb/defaults.cnf >"${INSTALL_DIR}"/my.roundcube.cnf
 
-# Copying Roundcube settings from install/config.inc.php
-mysql_roundcube_passwd="$mysql_roundcube_passwd" envsubst '$mysql_roundcube_passwd' <install/roundcubemail/config.inc.php >/etc/roundcubemail/config.inc.php
-chown apache:root /etc/roundcubemail/config.inc.php
-chmod 640 /etc/roundcubemail/config.inc.php
+  # Applying correct permissions to prevent password to be read by others
+  chmod 600 "${INSTALL_DIR}"/my.roundcube.cnf
+
+  # Copying Roundcube settings from install/config.inc.php
+  mysql_roundcube_passwd="$mysql_roundcube_passwd" envsubst '$mysql_roundcube_passwd' <install/roundcubemail/config.inc.php >/etc/roundcubemail/config.inc.php
+  chown apache:root /etc/roundcubemail/config.inc.php
+  chmod 640 /etc/roundcubemail/config.inc.php
+fi
 
 ##### 3. phpMyAdmin
 
@@ -309,22 +320,24 @@ systemctl -q enable httpd mariadb opendkim postfix dovecot fail2ban proftpd
 systemctl start httpd mariadb php-fpm-apache opendkim postfix dovecot fail2ban proftpd
 systemctl restart sshd
 
-# Settings MySQL defaults for roundcube
-mysql -u root -Bse "CREATE DATABASE roundcube_db;"
-mysql -u root -Bse "GRANT ALL ON roundcube_db.* TO roundcube_user@localhost IDENTIFIED BY '${mysql_roundcube_passwd}';"
-mysql --defaults-file="${INSTALL_DIR}"/my.roundcube.cnf roundcube_db </usr/share/roundcubemail/SQL/mysql.initial.sql
+if [ -z "${UPGRADING}" ]; then
+  # Settings MySQL defaults for roundcube
+  mysql -u root -Bse "CREATE DATABASE roundcube_db;"
+  mysql -u root -Bse "GRANT ALL ON roundcube_db.* TO roundcube_user@localhost IDENTIFIED BY '${mysql_roundcube_passwd}';"
+  mysql --defaults-file="${INSTALL_DIR}"/my.roundcube.cnf roundcube_db </usr/share/roundcubemail/SQL/mysql.initial.sql
 
-# Disabling MySQL test user and creating a password for root
-mysql -u root -Bse "DROP USER ''@'localhost'; DROP USER ''@'$(hostname)'; DROP DATABASE test"
-mysql -u root -Bse "UPDATE mysql.user SET Password=PASSWORD('${mysql_root_passwd}') WHERE User='root'; FLUSH PRIVILEGES;"
+  # Disabling MySQL test user and creating a password for root
+  mysql -u root -Bse "DROP USER ''@'localhost'; DROP USER ''@'$(hostname)'; DROP DATABASE test"
+  mysql -u root -Bse "UPDATE mysql.user SET Password=PASSWORD('${mysql_root_passwd}') WHERE User='root'; FLUSH PRIVILEGES;"
 
-# Generating the default website account
-admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
-echo "$admin_temp_pwd" >"${INSTALL_DIR}"/admin_paswd.cnf
-furnace user add --username admin --password "$admin_temp_pwd"
-furnace website add --username admin --domain "$server_fqdn" --allow-web-services
-ln -s /usr/share/phpMyAdmin /home/admin/web/"$server_fqdn"/phpmyadmin
-ln -s /var/www/html/webmail /home/admin/web/"$server_fqdn"/webmail
+  # Generating the default website account
+  admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
+  echo "$admin_temp_pwd" >"${INSTALL_DIR}"/admin_paswd.cnf
+  furnace user add --username admin --password "$admin_temp_pwd"
+  furnace website add --username admin --domain "$server_fqdn" --allow-web-services
+  ln -s /usr/share/phpMyAdmin /home/admin/web/"$server_fqdn"/phpmyadmin
+  ln -s /var/www/html/webmail /home/admin/web/"$server_fqdn"/webmail
+fi
 
 raise notice "Installation done."
 
