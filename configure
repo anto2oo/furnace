@@ -45,15 +45,16 @@ cp -r bin core templates furnace wrap "${INSTALL_DIR}"/
 chmod +x "${INSTALL_DIR}"/furnace
 mkdir -p "${INSTALL_DIR}"/{backup,ssl/{,gen,domains,self},dns,modules} /tmp/furnace
 
+# Including the logging module
+source "${INSTALL_DIR}"/core/logging
+
+# Checking if this is a reinstall
 if [ ! -L /usr/local/bin/furnace ]; then
   ln -s "${INSTALL_DIR}"/furnace /usr/local/bin/furnace
 else
   raise warning "furnace is already present on your system. Assuming you're updating."
   UPDATING=true
 fi
-
-# Including the logging module
-source "${INSTALL_DIR}"/core/logging
 
 ###################################
 ####    INSTALLING SOFTWARE    ####
