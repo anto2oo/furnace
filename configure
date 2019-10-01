@@ -120,7 +120,7 @@ firewall-cmd -q --permanent --zone=public --add-service=ftp
 firewall-cmd -q --reload
 
 # Add a group to prevent users from logging in via SSH
-if [ -z "${UPGRADING}" ]; then
+if [ "${UPGRADING}" == "true" ]; then
   if ! groupadd furnace; then
     raise warning "Group furnace already exists. Could not create it"
   fi
@@ -131,7 +131,7 @@ fi
 cp /etc/ssh/sshd_config "${INSTALL_DIR}"/backup/sshd_config
 cat install/sshd/sshd.conf >>/etc/ssh/sshd_config
 
-if [ -z "${UPGRADING}" ]; then
+if [ "${UPGRADING}" == "true" ]; then
   # Generating a random SQL root password
   MYSQL_PASSWORD="$(_generate_password)"
 
@@ -161,7 +161,7 @@ raise notice "Adding cron jobs to cron.d/"
 # # 1. LE certificates renewal
 echo "0 12 1/1 * ? * root furnace ssl renew >> ${INSTALL_DIR}/cron.log" >/etc/cron.daily/furnace-ssl-renew
 
-if [ -z "${UPGRADING}" ]; then
+if [ "${UPGRADING}" == "true" ]; then
   cp /etc/fstab /etc/fssave
   awk '$2~"^/$"{$4="usrquota,usrjquota=aquota.user,jqfmt=vfsv0,"$4}1' OFS="\t" /etc/fstab >/etc/fstemp
   mv /etc/fstemp /etc/fstab
@@ -195,7 +195,7 @@ chmod +x "${INSTALL_DIR}"/ssl/getssl
 raise notice "Starting mail setup..."
 
 # Creating groups/users to handle virtual mail
-if [ -z "${UPGRADING}" ]; then
+if [ "${UPGRADING}" == "true" ]; then
 
   if ! groupadd furnace_mail -g 2222; then
     raise warning "Couldn't create furnace_mail group."
@@ -285,7 +285,7 @@ fi
 
 raise notice "Installing Roundcube"
 
-if [ -z "${UPGRADING}" ]; then
+if [ "${UPGRADING}" == "true" ]; then
 
   # Generating a random password for Roundcube SQL
   RC_PASSWORD="$(_generate_password)"
@@ -314,7 +314,7 @@ systemctl -q enable httpd mariadb opendkim postfix dovecot fail2ban proftpd
 systemctl start httpd mariadb php-fpm-apache opendkim postfix dovecot fail2ban proftpd
 systemctl restart sshd
 
-if [ -z "${UPGRADING}" ]; then
+if [ "${UPGRADING}" == "true" ]; then
   # Settings MySQL defaults for roundcube
   mysql -u root -Bse "CREATE DATABASE roundcube_db;"
   mysql -u root -Bse "GRANT ALL ON roundcube_db.* TO roundcube_user@localhost IDENTIFIED BY '${mysql_roundcube_passwd}';"
