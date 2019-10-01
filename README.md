@@ -17,13 +17,11 @@ You may have to restart your computer or shell after finishing the install.
 
 ## Usage
 
-furnace is subdivided in 8 different modules that are :
-- usr
-- web_host
-- db
-- db_usr
+furnace is subdivided in different modules that are :
+- user
+- website
+- database
 - mail
-- mail_domain
 - ssl
 
 ### User management
@@ -34,12 +32,12 @@ However, when you list users, only users that belong to the furnace group will s
 #### Examples
 - User creation :
 ```bash
-furnace usr add --username=(USERNAME) --password=(PASSWORD)
+furnace user add --username (USERNAME) --password (PASSWORD)
 ```
 
 - User list : 
 ```bash
-furnace usr list
+furnace user list
 ```
 
 ### Web hosting management (Apache2 + php-fpm)
@@ -50,7 +48,7 @@ If you wish to enable phpMyAdmin and Roundcube on the domain, use the ```--allow
 #### Examples
 - Create a new virtual host :
 ```bash
-furnace web_host add --username=(USERNAME) --domain=(EXAMPLE.ORG)
+furnace website add --username (USERNAME) --domain (EXAMPLE.ORG)
 ```
 
 ### Email management (Postfix + Dovecot)
@@ -63,12 +61,12 @@ To help you, dummy DNS zones are stored into /usr/share/furnace/dns/
 
 - Add a domain for emailing :
 ```bash
-furnace mail_domain add --domain=(EXAMPLE.ORG)
+furnace mail domainadd --domain (EXAMPLE.ORG)
 ```
 
 - Add an email address to that domain :
 ```bash
-furnace mail add --address=(HELLO@EXAMPLE.ORG) --password=(PASSWORD)
+furnace mail add --address (HELLO@EXAMPLE.ORG) --password (PASSWORD)
 ```
 **Note** : hello@example.org will now be able to login to Roundcube.
 
@@ -80,11 +78,11 @@ You can then create SQL users and databases with the db and db_usr modules.
 #### Examples
 - SQL user creation :
 ```bash
-furnace db_usr add --username=(USERNAME) --password=(PASSWORD)
+furnace database useradd --username (USERNAME) --password (PASSWORD)
 ```
 - Database creation :
 ```bash
-furnace db add --username=(SQL USER) --database=(DATABASE NAME)
+furnace database add --username (SQL USER) --database (DATABASE NAME)
 ```
 
 ### 
