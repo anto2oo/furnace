@@ -5,7 +5,10 @@ if [ ! -f /etc/furnace.conf ]; then
   cp install/furnace.conf /etc/
 fi
 
-source /etc/furnace.conf || { echo "Could not load /etc/furnace.conf"; exit 1; }
+source /etc/furnace.conf || {
+  echo "Could not load /etc/furnace.conf"
+  exit 1
+}
 
 printf "======== \e[1mfurnace.sh initial setup\e[0m ========\n"
 
@@ -31,7 +34,7 @@ if [ -z "$server_fqdn" ]; then
 fi
 
 if [ ! -d "${INSTALL_DIR}" ]; then
-    mkdir -p "${INSTALL_DIR}"
+  mkdir -p "${INSTALL_DIR}"
 fi
 
 # Setting up bash autocompletion
@@ -40,7 +43,7 @@ cp install/bash/completion.sh /etc/bash_completion.d/furnace.sh
 # Copying files to the installation directory
 cp -r bin core templates furnace wrap "${INSTALL_DIR}"/
 chmod +x "${INSTALL_DIR}"/furnace
-mkdir "${INSTALL_DIR}"/backup "${INSTALL_DIR}"/ssl "${INSTALL_DIR}"/dns "${INSTALL_DIR}"/modules /tmp/furnace
+mkdir -p "${INSTALL_DIR}"/{backup,ssl/{,gen,domains,self},dns,modules} /tmp/furnace
 ln -s "${INSTALL_DIR}"/furnace /usr/local/bin/furnace
 
 # Including the logging module
@@ -144,7 +147,7 @@ cp "${INSTALL_DIR}"/templates/skeleton/default.html /var/www/html/index.html
 username="apache" envsubst '$username' <"${INSTALL_DIR}"/templates/php-fpm/pool.conf >/etc/php-fpm.d/apache.conf
 
 # Creating the directory for php-fpm sockets
-mkdir /var/run/php-fpm
+mkdir -p /var/run/php-fpm
 
 # Removing restrictions applied to normal users
 sed -i '/^php_admin_value/ d' /etc/php-fpm.d/apache.conf
@@ -179,8 +182,7 @@ fi
 cp install/fail2ban/sshd.conf /etc/fail2ban/jail.d/sshd.conf
 
 wget -q -O "${INSTALL_DIR}"/ssl/getssl https://raw.githubusercontent.com/srvrco/getssl/master/getssl
-mkdir "${INSTALL_DIR}"/ssl/.getssl
-cp install/getssl/getssl.cfg "${INSTALL_DIR}"/ssl/.getssl/getssl.cfg
+cp install/getssl/getssl.cfg "${INSTALL_DIR}"/ssl/getssl.cfg
 INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/getssl/getssl.cfg >"${INSTALL_DIR}"/ssl/.getssl/getssl.cfg
 
 chmod +x "${INSTALL_DIR}"/ssl/getssl
@@ -223,9 +225,7 @@ cat install/postfix/master.cf >/etc/postfix/master.cf
 
 # Creating file structure to handle virtual
 # mailboxes
-if [ ! -d /etc/postfix/furnace ]; then
-  mkdir /etc/postfix/furnace
-fi
+mkdir -p /etc/postfix/furnace
 
 # Create virtual mailboxes databases
 touch /etc/postfix/furnace/mail_domains
@@ -270,6 +270,7 @@ cp install/httpd/services.conf /etc/httpd/conf/services.conf
 INSTALL_DIR="${INSTALL_DIR}" envsubst '$INSTALL_DIR' <install/httpd/default.conf >/etc/httpd/conf.d/default.conf
 
 # Generating a self-signed cert for web services
+# TODO : change destination to ssl/self
 if [ ! -f "${INSTALL_DIR}"/ssl/web_cert.pem ] && [ ! -f "${INSTALL_DIR}"/ssl/web_key.pem ]; then
   openssl req -newkey rsa:2048 -nodes -keyout "${INSTALL_DIR}"/ssl/web_key.pem -x509 -out "${INSTALL_DIR}"/ssl/web_cert.pem -days 9999 -subj "/C=''/ST=''/L=''/O=''/OU=''/CN=''" >/dev/null 2>&1
 else
