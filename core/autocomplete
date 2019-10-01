@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This function is used by bash completion to display all options for a specific action
+
 options() {
 
   _help

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# The functions in this file take care of the cases when the user passes the --help argument
+
 help_modules() {
 
   printf "Usage : furnace (MODULE) (ACTION) [PARAMETERS]\nAvailable modules :\n"

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This function is used to log all actions
+
 raise() {
 
   case "$1" in
