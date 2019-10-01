@@ -298,7 +298,7 @@ if [ ! "${UPDATING}" == "true" ]; then
   chmod 600 "${INSTALL_DIR}"/my.roundcube.cnf
 
   # Copying Roundcube settings from install/config.inc.php
-  mysql_roundcube_passwd="$mysql_roundcube_passwd" envsubst '$mysql_roundcube_passwd' <install/roundcubemail/config.inc.php >/etc/roundcubemail/config.inc.php
+  mysql_roundcube_passwd="$RC_PASSWORD" envsubst '$mysql_roundcube_passwd' <install/roundcubemail/config.inc.php >/etc/roundcubemail/config.inc.php
   chown apache:root /etc/roundcubemail/config.inc.php
   chmod 640 /etc/roundcubemail/config.inc.php
 fi
@@ -318,17 +318,17 @@ systemctl restart sshd
 if [ ! "${UPDATING}" == "true" ]; then
   # Settings MySQL defaults for roundcube
   mysql -u root -Bse "CREATE DATABASE roundcube_db;"
-  mysql -u root -Bse "GRANT ALL ON roundcube_db.* TO roundcube_user@localhost IDENTIFIED BY '${mysql_roundcube_passwd}';"
+  mysql -u root -Bse "GRANT ALL ON roundcube_db.* TO roundcube_user@localhost IDENTIFIED BY '${RC_PASSWORD}';"
   mysql --defaults-file="${INSTALL_DIR}"/my.roundcube.cnf roundcube_db </usr/share/roundcubemail/SQL/mysql.initial.sql
 
   # Disabling MySQL test user and creating a password for root
   mysql -u root -Bse "DROP USER ''@'localhost'; DROP USER ''@'$(hostname)'; DROP DATABASE test"
-  mysql -u root -Bse "UPDATE mysql.user SET Password=PASSWORD('${mysql_root_passwd}') WHERE User='root'; FLUSH PRIVILEGES;"
+  mysql -u root -Bse "UPDATE mysql.user SET Password=PASSWORD('${MYSQL_PASSWORD}') WHERE User='root'; FLUSH PRIVILEGES;"
 
   # Generating the default website account
-  admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
-  echo "$admin_temp_pwd" >"${INSTALL_DIR}"/admin_paswd.cnf
-  furnace user add --username admin --password "$admin_temp_pwd"
+  ADMIN_PASSWORD="$(_generate_password)"
+  echo "${ADMIN_PASSWORD}" >"${INSTALL_DIR}"/admin_paswd.cnf
+  furnace user add --username admin --password "${ADMIN_PASSWORD}"
   furnace website add --username admin --domain "$FQDN" --allow-web-services
   ln -s /usr/share/phpMyAdmin /home/admin/web/"$FQDN"/phpmyadmin
   ln -s /var/www/html/webmail /home/admin/web/"$FQDN"/webmail
