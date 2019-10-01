@@ -10,8 +10,6 @@ source /etc/furnace.conf || {
   exit 1
 }
 
-printf "======== \e[1mfurnace.sh initial setup\e[0m ========\n"
-
 # Comment the following lines if you want to force installation on anything other than CentOS 7.x
 if [ ! "$(awk '{print $4}' /etc/centos-release 2>/dev/null | cut -d. -f1)" == "7" ]; then
 
@@ -26,11 +24,6 @@ if [ ! "$(id -u)" == "0" ]; then
   echo "Sorry, you must run this script as a superuser"
   exit 1
 
-fi
-
-read -rp "Server FQDN [$(hostname)] : " server_fqdn
-if [ -z "$server_fqdn" ]; then
-  server_fqdn=$(hostname)
 fi
 
 if [ ! -d "${INSTALL_DIR}" ]; then
@@ -335,15 +328,15 @@ if [ -z "${UPGRADING}" ]; then
   admin_temp_pwd="$(tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w 16 | head -n 1)"
   echo "$admin_temp_pwd" >"${INSTALL_DIR}"/admin_paswd.cnf
   furnace user add --username admin --password "$admin_temp_pwd"
-  furnace website add --username admin --domain "$server_fqdn" --allow-web-services
-  ln -s /usr/share/phpMyAdmin /home/admin/web/"$server_fqdn"/phpmyadmin
-  ln -s /var/www/html/webmail /home/admin/web/"$server_fqdn"/webmail
+  furnace website add --username admin --domain "$FQDN" --allow-web-services
+  ln -s /usr/share/phpMyAdmin /home/admin/web/"$FQDN"/phpmyadmin
+  ln -s /var/www/html/webmail /home/admin/web/"$FQDN"/webmail
 fi
 
 raise notice "Installation done."
 
 printf "\n======== \e[1mThanks for using the installer\e[0m ========\n
-An admin user has been created for your main website $server_fqdn. 
+An admin user has been created for your main website $FQDN.
 Its default password is : %s.
 You can now access your web services using your server IP address :
 https://${SERVER_ADDR}/phpmyadmin for phpMyAdmin and 
