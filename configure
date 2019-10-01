@@ -70,7 +70,7 @@ if [ "${UPGRADE_SERVICES}" == "yes" ]; then
 
   # Enable PHP from remi repository
   yum install -q -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-  yum-config-manager --enable remi-php73
+  yum-config-manager --enable remi-php73 > /dev/null
 
 fi
 
