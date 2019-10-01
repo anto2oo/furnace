@@ -136,7 +136,7 @@ if [ "${UPGRADING}" == "true" ]; then
   MYSQL_PASSWORD="$(_generate_password)"
 
   # Storing this password into a MySQL conf file
-  NAME="client" USERNAME="root" PASSWORD="$MYSQL_PASSWORD" envsubst '$NAME,$USERNAME,PASSWORD' <install/mariadb/defaults.cnf >"${INSTALL_DIR}"/my.root.cnf
+  NAME="client" USER="root" PASSWORD="$MYSQL_PASSWORD" envsubst '$NAME,$USER,$PASSWORD' <install/mariadb/defaults.cnf >"${INSTALL_DIR}"/my.root.cnf
 
   # Applying correct permissions to prevent password to be read by others
   chmod 600 "${INSTALL_DIR}"/my.root.cnf
@@ -291,7 +291,7 @@ if [ "${UPGRADING}" == "true" ]; then
   RC_PASSWORD="$(_generate_password)"
 
   # Storing this password into a MySQL conf file
-  NAME="client" USERNAME="roundcube_user" PASSWORD="$RC_PASSWORD" envsubst '$NAME,$USERNAME,PASSWORD' <install/mariadb/defaults.cnf >"${INSTALL_DIR}"/my.roundcube.cnf
+  NAME="client" USER="roundcube_user" PASSWORD="$RC_PASSWORD" envsubst '$NAME,$USER,$PASSWORD' <install/mariadb/defaults.cnf >"${INSTALL_DIR}"/my.roundcube.cnf
 
   # Applying correct permissions to prevent password to be read by others
   chmod 600 "${INSTALL_DIR}"/my.roundcube.cnf
