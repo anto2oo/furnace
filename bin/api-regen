@@ -1,0 +1,17 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE=""
+    _DESCRIPTION="Regenerate the furnace API token."
+}
+
+_params() {
+:
+}
+
+_method() {
+  NEW_TOKEN="$(_generate_password)"
+  sed -i "s/API_TOKEN=/API_TOKEN=${NEW_TOKEN}/g" /etc/furnace.conf
+  raise notice "A new token has been generated for this installation"
+}

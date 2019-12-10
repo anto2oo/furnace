@@ -1,0 +1,4 @@
+
+# This configuration tweak was added by furnace
+# in order to provide API access to apache
+apache ALL=(ALL) NOPASSWD: /usr/local/bin/furnace

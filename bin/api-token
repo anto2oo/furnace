@@ -1,0 +1,15 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE=""
+    _DESCRIPTION="Get the current API token."
+}
+
+_params() {
+:
+}
+
+_method() {
+  echo "$API_TOKEN"
+}

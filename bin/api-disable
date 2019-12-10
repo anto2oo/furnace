@@ -1,0 +1,16 @@
+#!/bin/bash
+
+_help() {
+
+    _USAGE=""
+    _DESCRIPTION="Disable the API for the current installation."
+}
+
+_params() {
+:
+}
+
+_method() {
+  rm -f /var/www/html/forward.php
+  raise notice "The API service is now disabled"
+}

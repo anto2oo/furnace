@@ -130,7 +130,7 @@ fi
 # Backing up and editing /etc/ssh/sshd_config
 # from template install/sshd/sshd.conf
 cp /etc/ssh/sshd_config "${INSTALL_DIR}"/backup/sshd_config
-cat install/sshd/sshd.conf >>/etc/ssh/sshd_config
+cat "${INSTALL_DIR}"/sshd/sshd.conf >>/etc/ssh/sshd_config
 
 if [ ! "${UPDATING}" == "true" ]; then
   # Generating a random SQL root password
@@ -333,6 +333,14 @@ if [ ! "${UPDATING}" == "true" ]; then
   ln -s /usr/share/phpMyAdmin /home/admin/web/"$FQDN"/phpmyadmin
   ln -s /var/www/html/webmail /home/admin/web/"$FQDN"/webmail
 fi
+
+###################################
+####         API SETUP         ####
+###################################
+
+# Allow apache to run furnace
+furance api regen
+cat "${INSTALL_DIR}"/sudo/sudoers >> /etc/sudoers
 
 raise notice "Installation done."
 
