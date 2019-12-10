@@ -1,13 +1,18 @@
 <?php
 
+/**
+ * Runs a furnace command
+ * @param string $command
+ * @return array|mixed
+ */
 function run($command = ''){
     $output = [];
     exec('sudo /usr/local/bin/furnace ' . $command, $output);
-    return $output;
+    return count($output) === 1 ? $output[0] : $output;
 }
 
 // Base settings
-$app_token = run('api token')[0];
+$app_token = run('api token');
 
 // Passed data
 $token = $_GET['token'];
