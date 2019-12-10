@@ -1,0 +1,22 @@
+#!/bin/bash
+
+_help() {
+
+  _USAGE="OPTIONS"
+  _DESCRIPTION="Check if a user currently exists"
+  _HELP["username"]="Specify the username"
+}
+
+_params() {
+  _PARAM["username"]="u"
+
+}
+
+_method() {
+  if [ "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
+    echo false
+  else
+    echo true
+  fi
+
+}
