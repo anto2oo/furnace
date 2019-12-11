@@ -15,8 +15,10 @@ _params() {
 _method() {
   if [ "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
     echo false
+    exit 1
   else
     echo true
+    exit 0
   fi
 
 }
