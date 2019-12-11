@@ -125,6 +125,10 @@ if [ ! "${UPDATING}" == "true" ]; then
   if ! groupadd furnace; then
     raise warning "Group furnace already exists. Could not create it"
   fi
+
+  if ! groupadd furnace_subsftp; then
+    raise warning "Group furnace_subsftp already exists. Could not create it"
+  fi
 fi
 
 # Backing up and editing /etc/ssh/sshd_config
@@ -330,8 +334,8 @@ if [ ! "${UPDATING}" == "true" ]; then
   echo "${ADMIN_PASSWORD}" >"${INSTALL_DIR}"/admin_paswd.cnf
   furnace user add --username admin --password "${ADMIN_PASSWORD}"
   furnace website add --username admin --domain "$FQDN" --allow-web-services
-  ln -s /usr/share/phpMyAdmin /home/admin/web/"$FQDN"/phpmyadmin
-  ln -s /var/www/html/webmail /home/admin/web/"$FQDN"/webmail
+  ln -s /usr/share/phpMyAdmin /home/admin/"$FQDN"/web/phpmyadmin
+  ln -s /var/www/html/webmail /home/admin/"$FQDN"/web/webmail
 fi
 
 ###################################
