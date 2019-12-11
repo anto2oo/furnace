@@ -20,7 +20,7 @@ if [ "$(grep -c "^${_ARG[username]}:" /etc/passwd)" = 0 ]; then
 	raise fatal "User ${_ARG[username]} not in /etc/passwd"
 fi
 
-if ! mkdir /home/"${_ARG[username]}"/{web,logs}/"${_ARG[domain]}"; then
+if ! mkdir /home/"${_ARG[username]}"/"${_ARG[domain]}"/{web,logs}; then
 	raise warning "Failed to create ${_ARG[domain]} website home"
 fi
 
@@ -35,11 +35,11 @@ ${_ARG[domain]}.   1   IN  A   ${server_addr}
 " > "${INSTALL_DIR}"/dns/${base_domain}.txt
 
 
-chown "${_ARG[username]}:${_ARG[username]}" /home/"${_ARG[username]}"/web/"${_ARG[domain]}"
+chown "${_ARG[username]}:${_ARG[username]}" /home/"${_ARG[username]}"/"${_ARG[domain]}"
 
-chmod 751 /home/"${_ARG[username]}"/web/"${_ARG[domain]}"
+chmod 751 /home/"${_ARG[username]}"/"${_ARG[domain]}"
 
-cp -n "${INSTALL_DIR}"/templates/skeleton/user.html /home/"${_ARG[username]}"/web/"${_ARG[domain]}"/index.php
+cp -n "${INSTALL_DIR}"/templates/skeleton/user.html /home/"${_ARG[username]}"/"${_ARG[domain]}"/web/index.php
 
 username="${_ARG[username]}" domain="${_ARG[domain]}" envsubst '$username,$domain' < "${INSTALL_DIR}"/templates/httpd/host.conf > /etc/httpd/conf.d/"${_ARG[username]}"_"${_ARG[domain]}".conf
 

@@ -17,14 +17,14 @@ _method() {
 
 if [ "${_FLAG["json"]}" = 1 ]; then
     echo $( printf '[ '
-        for file in /home/"${_ARG["username"]}"/web/*; do 
+        for file in /home/"${_ARG["username"]}"/*; do
             printf ", \""
             printf "${file##*/}"
             printf "\""
         done | sed '0,/, /s///' 
     printf ' ]' ) 
 else
-    for file in /home/"${_ARG["username"]}"/web/*; do
+    for file in /home/"${_ARG["username"]}"/*; do
         echo "${file##*/}"
     done
 fi
